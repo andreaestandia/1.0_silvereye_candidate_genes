@@ -1,0 +1,643 @@
+---
+title: "1.0_candidate-genes_data-wran_plotting"
+author: "Andrea Estandia<br>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+<br>
+
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+
+Read data and create subset by gene
+
+```{r, echo=FALSE}
+df <-
+  read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv")) %>%
+  mutate_if(is.character, as.factor)
+
+CREB1 <- df %>%
+  drop_na(short_creb1)
+
+ADCYAP <- df %>%
+  drop_na(short_adcyap)
+
+CLOCK <- df %>%
+  drop_na(short_clock)
+
+NPAS2 <- df %>%
+  drop_na(short_npas2)
+```
+
+Plots
+```{r, echo=FALSE, fig.width=8, fig.height=6}
+text_size = 11
+
+palette_Dark2 <- colorRampPalette(brewer.pal(14, "Dark2"))
+pal <- palette_Dark2(length(unique(CLOCK$population)))
+
+npas2.plot <- NPAS2 %>%
+  mutate(population = fct_reorder(population, locator_x)) %>%
+  ggplot(aes(y = mean_npas2,
+             x = 12 * (locator_x),
+             color=cluster)) +
+  stat_summary(
+    aes(group = population),
+    geom = "pointrange",
+    fun.data = mean_cl_boot,
+    size = 1
+  ) +
+  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  geom_jitter(
+    width = 2,
+    height = 0.1,
+    alpha = 0.25
+  ) +
+  scale_x_continuous(
+    breaks = as.numeric(
+      c(
+        "0",
+        "12",
+        "24",
+        "36",
+        "48",
+        "60",
+        "72",
+        "84",
+        "96",
+        "108",
+        "120",
+        "132",
+        "144",
+        "156",
+        "168",
+        "180",
+        "192",
+        "204",
+        "216"
+      )
+    ),
+    labels = c(
+      "Australia",
+      "Tasmania",
+      "Aotearoa/New Zealand",
+      "Chatham Islands",
+      "Norfolk Island",
+      "Heron Island",
+      "Lord Howe Island",
+      "Grand Terre",
+      "Ouvea",
+      "Lifou",
+      "Mare",
+      "Gaua",
+      "Espiritu Santo",
+      "Pentecost",
+      "Malekula",
+      "Ambrym",
+      "Efate",
+      "Erromango",
+      "Tanna"
+    )
+  ) +
+  scale_y_continuous(breaks = breaks_pretty(n = 10)) +
+  scale_color_manual(values= c("#525252", "#538699"), name ="Cluster", labels=c("Southern Melanesian", "Australian")) +
+  coord_fixed(ratio = 10) +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust=1, size = text_size),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    plot.subtitle = element_text(color = "#424242",
+                                 size = text_size - (text_size / 100 * 20))
+  ) +
+  labs(
+    y = "Mean allele length (bp)\n",
+    x = "",
+    colour = "Population",
+    size = "Mean\ngene flow\n",
+    title = "NPAS2"
+  )
+
+text_size = 11
+
+pal <- palette_Dark2(length(unique(ADCYAP$population)))
+
+adcyap1.plot <- ADCYAP %>%
+  mutate(population = fct_reorder(population, locator_x)) %>%
+  ggplot(aes(
+    y = mean_adcyap,
+    x = 10 * (locator_x),
+    color = cluster
+  )) +
+  stat_summary(
+    aes(group = population),
+    geom = "pointrange",
+    fun.data = mean_cl_boot,
+    size = 1
+  ) +
+  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  geom_jitter(width = 2,
+              height = 0.1,
+              alpha = 0.25) +
+    scale_x_continuous(
+    breaks = as.numeric(
+      c(
+        "0",
+        "10",
+        "20",
+        "30",
+        "40",
+        "50",
+        "60",
+        "70",
+        "80",
+        "90",
+        "100",
+        "110",
+        "120",
+        "130",
+        "140",
+        "150",
+        "160",
+        "170",
+        "180"
+      )
+    ),
+    labels = c(
+      "Australia",
+      "Tasmania",
+      "Aotearoa/New Zealand",
+      "Chatham Islands",
+      "Norfolk Island",
+      "Heron Island",
+      "Lord Howe Island",
+      "Grand Terre",
+      "Ouvea",
+      "Lifou",
+      "Mare",
+      "Gaua",
+      "Espiritu Santo",
+      "Pentecost",
+      "Malekula",
+      "Ambrym",
+      "Efate",
+      "Erromango",
+      "Tanna"
+    )
+  ) +
+  scale_y_continuous(breaks = breaks_pretty(n = 10)) +
+  scale_color_manual(values= c("#525252", "#538699"), name ="Cluster", labels=c("Southern Melanesian", "Australian")) +
+  coord_fixed(ratio = 8) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust=1, angle=45, size = text_size),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    plot.subtitle = element_text(color = "#424242",
+                                 size = text_size - (text_size / 100 * 20))
+  ) +
+  labs(
+    y = "Mean allele length (bp)\n",
+    x = "",
+    colour = "Population",
+    size = "Mean\ngene flow\n",
+    title = "ADCYAP1"
+  ) 
+
+pal <- palette_Dark2(length(unique(CLOCK$population)))
+
+clock.plot <- CLOCK %>%
+  mutate(population = fct_reorder(population, locator_x)) %>%
+  ggplot(aes(
+    y = mean_clock,
+    x = 5 * (locator_x),
+    color = cluster
+  )) +
+  stat_summary(
+    aes(group = population),
+    geom = "pointrange",
+    fun.data = mean_cl_boot,
+    size = 1
+  ) +
+  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  geom_jitter(width = 2,
+              height = 0.1,
+              alpha = 0.25) +
+   scale_x_continuous(
+    breaks = as.numeric(
+      c(
+        "0",
+        "5",
+        "10",
+        "15",
+        "20",
+        "25",
+        "30",
+        "35",
+        "40",
+        "45",
+        "50",
+        "55",
+        "60",
+        "65",
+        "70",
+        "75",
+        "80",
+        "85",
+        "90"
+      )
+    ),
+    labels = c(
+      "Australia",
+      "Tasmania",
+      "Aotearoa/New Zealand",
+      "Chatham Islands",
+      "Norfolk Island",
+      "Heron Island",
+      "Lord Howe Island",
+      "Grand Terre",
+      "Ouvea",
+      "Lifou",
+      "Mare",
+      "Gaua",
+      "Espiritu Santo",
+      "Pentecost",
+      "Malekula",
+      "Ambrym",
+      "Efate",
+      "Erromango",
+      "Tanna"
+    )
+  ) +
+  scale_y_continuous(breaks = breaks_pretty(n = 10)) +
+  scale_color_manual(values= c("#525252", "#538699"), name ="Cluster", labels=c("Southern Melanesian", "Australian")) +
+  coord_fixed(ratio = 8) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust = 1, angle = 45, size = text_size),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    plot.subtitle = element_text(color = "#424242",
+                                 size = text_size - (text_size / 100 * 20))
+  ) +
+  labs(
+    y = "Mean allele length (bp)\n",
+    x = "",
+    colour = "Population",
+    size = "Mean\ngene flow\n",
+    title = "CLOCK"
+  )
+
+pal <- palette_Dark2(length(unique(CREB1$population)))
+
+
+creb1.plot <- CREB1 %>%
+  mutate(population = fct_reorder(population, locator_x)) %>%
+  ggplot(aes(
+    y = mean_creb1,
+    x = 10 * (locator_x),
+    color = cluster
+  )) +
+  stat_summary(
+    aes(group = population),
+    geom = "pointrange",
+    fun.data = mean_cl_boot,
+    size = 1
+  ) +
+  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  geom_jitter(width = 2,
+              height = 0.1,
+              alpha = 0.25) +
+  scale_x_continuous(
+    breaks = as.numeric(
+      c(
+        "0",
+        "10",
+        "20",
+        "30",
+        "40",
+        "50",
+        "60",
+        "70",
+        "80",
+        "90",
+        "100",
+        "110",
+        "120",
+        "130",
+        "140",
+        "150",
+        "160",
+        "170",
+        "180"
+      )
+    ),
+    labels = c(
+      "Australia",
+      "Tasmania",
+      "Aotearoa/New Zealand",
+      "Chatham Islands",
+      "Norfolk Island",
+      "Heron Island",
+      "Lord Howe Island",
+      "Grand Terre",
+      "Ouvea",
+      "Lifou",
+      "Mare",
+      "Gaua",
+      "Espiritu Santo",
+      "Pentecost",
+      "Malekula",
+      "Ambrym",
+      "Efate",
+      "Erromango",
+      "Tanna"
+    )
+  ) +
+  scale_y_continuous(breaks = breaks_pretty(n = 10)) +
+  scale_color_manual(values= c("#525252", "#538699"), name ="Cluster", labels=c("Southern Melanesian", "Australian")) +
+  coord_fixed(ratio = 8) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle=45,hjust=1, size = text_size),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    plot.subtitle = element_text(color = "#424242",
+                                 size = text_size - (text_size / 100 * 20))
+  ) +
+  labs(
+    y = "Mean allele length (bp)\n",
+    x = "",
+    colour = "Population",
+    size = "Mean\ngene flow\n",
+    title = "CREB1"
+  ) 
+
+
+creb1.pal <-
+  c(
+    "#7D6B4B",
+    "#7D6B4B",
+    "#7D6B4B",
+    "#7D6B4B",
+    "#7D6B4B",
+    "#7D6B4B",
+    "#7D6B4B",
+    "#7D6B4B",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77",
+    "#1B9E77"
+  )
+CREB1 %>%
+  mutate(population = fct_reorder(population, locator_x)) %>%
+  ggplot(aes(
+    y = mean_creb1,
+    x = 15 * (locator_x),
+    color = cluster
+  )) +
+  stat_summary(
+    aes(group = population),
+    geom = "pointrange",
+    fun.data = mean_cl_boot,
+    size = 1
+  ) +
+  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  geom_jitter(width = 2,
+              height = 0.1,
+              alpha = 0.1) +
+  scale_y_continuous(breaks = breaks_pretty(n = 10)) +
+  scale_x_continuous(
+    breaks = as.numeric(
+      c(
+        "0",
+        "15",
+        "30",
+        "45",
+        "60",
+        "75",
+        "90",
+        "105",
+        "120",
+        "135",
+        "150",
+        "165",
+        "180",
+        "195",
+        "210",
+        "225",
+        "240",
+        "255",
+        "270"
+      )
+    ),
+    labels = c(
+      "Australia",
+      "Tasmania",
+      "Aotearoa/New Zealand",
+      "Chatham Islands",
+      "Norfolk Island",
+      "Heron Island",
+      "Lord Howe Island",
+      "Grand Terre",
+      "Ouvea",
+      "Lifou",
+      "Mare",
+      "Gaua",
+      "Espiritu Santo",
+      "Pentecost",
+      "Malekula",
+      "Ambrym",
+      "Efate",
+      "Erromango",
+      "Tanna"
+    )
+  ) +
+  coord_fixed(ratio = 8) +
+  scale_color_manual(values= c("#525252", "#538699"))+
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1,  size = text_size),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    plot.subtitle = element_text(color = "#424242",
+                                 size = text_size - (text_size / 100 * 20))
+  ) +
+  labs(
+    y = "Mean allele length (bp)\n",
+    x = "",
+    colour = "Population",
+    size = "Mean\ngene flow\n",
+    title = "CREB1"
+  ) +
+  theme(legend.position = "none")
+
+all.plot <- plot_grid(
+  creb1.plot + theme(legend.position = "none"),
+  clock.plot + theme(legend.position = "none"),
+  adcyap1.plot + theme(legend.position = "none"),
+  npas2.plot + theme(legend.position = "none"),
+  labels = c("CREB1", "CLOCK", "ADCYAP1", "NPAS2"),
+  nrow = 2,
+  ncol = 2
+)
+legend <- get_legend(adcyap1.plot)
+all.plot <- plot_grid(all.plot, legend, rel_widths = c(3, .3))
+
+creb1.plot+clock.plot+adcyap1.plot+npas2.plot+plot_layout(ncol=2)
+all.plot <- ggarrange(creb1.plot,clock.plot,adcyap1.plot, npas2.plot, common.legend = TRUE, ncol=2 ,nrow=2, legend="bottom")
+
+all.plot
+
+ggsave(
+  plot = all.plot,
+  filename = "all.plot.png",
+  path = figures_path,
+  device = "png",
+  scale=1,
+  width = 27,
+  height = 22,
+  dpi = 400,
+  units = "cm"
+)
+
+
+```
+
+Dotplot for CLOCK
+```{r}
+migratory.subset_total <- df %>%
+  filter(population %in% c("Australia","Tasmania")) %>%
+  dplyr::arrange(population) %>%
+  mutate(date2 = dmy(date)) %>% 
+  mutate(month=month(date2)) %>% 
+  filter(((population=="Australia" & month >= 4 & month <= 10 ))|
+          migrant == "yes" |
+          (population == "Tasmania" & month == 6)) %>% 
+  mutate(population==as.character(population)) %>% 
+  mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
+  mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
+  mutate(population==as.factor(population))
+
+dp <- ggplot(
+  migratory.subset_total,
+  aes(
+    x = fct_reorder(population, mean_clock),
+    y = mean_clock,
+    color = population,
+    fill = population
+  )
+) +
+  geom_dotplot(
+    binaxis = 'y',
+    stackdir = 'center',
+    binwidth = 0.12,
+    dotsize = 1.5
+  ) +
+  labs(x = "", y = "Mean CLOCK length (bp)\n") + 
+  stat_summary(fun.data = data_summary, color ="black") + 
+  scale_x_discrete(breaks=c("Australia", "Tasmania non-migrants", "Tasmania migrants"),
+                   labels =c("Australia", "Tasmania non-migrants", "Tasmania migrants"))+
+  scale_fill_manual(values = c("#76a66c", "#c99732", "#6ca1a6")) + 
+  scale_color_manual(values = c("#76a66c", "#c99732", "#6ca1a6")) +
+  theme_minimal() + 
+  theme(legend.position = "none",
+        panel.grid.major = element_blank()) 
+
+ggsave(
+  plot = dp,
+  filename = "clock.png",
+  path = figures_path,
+  device = "png",
+  scale=1,
+  width = 10,
+  height = 10,
+  dpi = 400,
+  units = "cm"
+)
+```
+
+Plot SNP83
+```{r}
+df %>%
+  mutate(population = fct_reorder(population, locator2)) %>%
+  ggplot(aes(y = DRD12_snp83,
+             x = population,
+             color = cluster)) +
+  stat_summary(
+    aes(group = population),
+    geom = "pointrange",
+    fun.data = mean_cl_boot,
+    size = 1
+  ) +
+  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  geom_jitter(width = 0.1,
+              height = 0.1,
+              alpha = 0.5) +
+  scale_y_continuous(breaks = as.numeric(c("0", "1")), labels = c("A", "G")) +
+  coord_fixed(ratio = 10) +
+  theme_minimal() +
+  theme(
+    plot.background = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(hjust=1),
+    axis.ticks = element_blank(),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10))
+  ) +
+  labs(
+    y = "",
+    x = "",
+    colour = "Cluster",
+    title = "SNP83 DRD4",
+    family = "Helvetica-Narrow"
+  ) +
+  scale_color_manual(
+    labels = c("Southern Melanesia", "Australian"),
+    values = c("#525252", "#538699")
+  ) +
+  theme(legend.position = "right")
+```
+
