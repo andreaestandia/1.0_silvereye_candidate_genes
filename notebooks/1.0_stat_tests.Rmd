@@ -1,0 +1,156 @@
+---
+  title: "1.0_tests"
+author: "Andrea Estandia<br>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+  toc: true
+toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+  <br>
+  
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+
+Read allelic richness data and Ho
+```{r}
+ar.c <-read_csv("data/allelic-richness-candidate.csv")
+ho.c <-read_csv("data/allelic-richness-candidate.csv")
+```
+
+T-test for differences between clusters
+```{r}
+list_genes <- colnames(ar.c[,c(3:6)])
+
+purrr::map(ar.c[3:6], ~t.test(.x ~ ar.c$archipelago))
+purrr::map(ho.c[3:6], ~t.test(.x ~ ho.c$archipelago))
+```
+
+Read data and create subset by gene
+
+```{r, echo=FALSE}
+df <-
+  read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv")) %>%
+  mutate_if(is.character, as.factor)
+
+CREB1 <- df %>%
+  drop_na(short_creb1)
+
+ADCYAP <- df %>%
+  drop_na(short_adcyap)
+
+CLOCK <- df %>%
+  drop_na(short_clock)
+
+NPAS2 <- df %>%
+  drop_na(short_npas2)
+```
+
+ANOVA and Tukey tests for DRD4 and SERT
+```{r}
+list_variants <- colnames(df[,grep("DRD|SERT", colnames(df))])
+subset_variants <- df[,grep("DRD|SERT", colnames(df))]
+
+list_variants_out <- list()
+for (variant in list_variants){
+  tmp <- df %>%
+    dplyr::select(name, population, variant, locator) %>%
+    drop_na(variant)
+  print(summary(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+  print(TukeyHSD(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+}
+```
+
+Summary stats, ANOVA and Tukey tests for candidate microsatellite
+```{r}
+list_variants <- colnames(df[,grep("mean_adcyap|mean_npas|mean_clock|mean_creb", colnames(df))])
+subset_variants <- df[,grep("mean_adcyap|mean_npas|mean_clock|mean_creb", colnames(df))]
+
+list_variants_out <- list()
+for (variant in list_variants){
+  tmp <- df %>%
+    dplyr::select(name, population, variant, locator) %>%
+    drop_na(variant)
+  print(summary(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+  print(TukeyHSD(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+}
+
+for (variant in list_variants){
+  print(group_by(df, population) %>%
+          summarise(
+            count = n(),
+            mean = mean(get(variant), na.rm = TRUE),
+            sd = sd(get(variant), na.rm = TRUE)
+          ))
+}
+```
+
+Create subset with only Australia, Tasmania and Tasmanian migrants removing those birds that weren't caught in winter. Test whether there are differences between migrants, Australians and Tasmanian individuals
+```{r}
+migratory.subset_total <- df %>%
+  filter(population %in% c("Australia","Tasmania")) %>%
+  dplyr::arrange(population) %>%
+  mutate(date2 = dmy(date)) %>% 
+  mutate(month=month(date2)) %>% 
+  filter(((population=="Australia" & month >= 4 & month <= 10 ))|
+          migrant == "yes" |
+          (population == "Tasmania" & month == 6)) %>% 
+  mutate(population==as.character(population)) %>% 
+  mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
+  mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
+  mutate(population==as.factor(population))
+   
+
+clock.migr.aov <- aov(mean_clock ~ population, data = migratory.subset_total)
+clock.migr.tukey <- TukeyHSD(clock.migr.aov)
+
+list_variants <- colnames(migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))])
+subset_variants <- migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))]
+
+list_variants_out <- list()
+for (variant in list_variants){
+  tmp <- migratory.subset_total %>%
+  dplyr::select(name, population, variant, locator) %>%
+  drop_na(variant)
+  #print(summary(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+  print(variant)
+  print(TukeyHSD(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+}
+```
+
+Pairwise t-test for allele length
+
+```{r, echo=FALSE}
+pairwise.t.test(CREB1$mean_creb1, CREB1$population, p.adj = 'bonf')
+pairwise.t.test(CLOCK$mean_clock, CLOCK$population, p.adj = 'bonf')
+pairwise.t.test(ADCYAP$mean_adcyap, ADCYAP$population, p.adj = 'bonf')
+pairwise.t.test(NPAS2$mean_npas2, NPAS2$population, p.adj = 'bonf')
+```
+
+T-test to know whether partial migrants and the rest of the populations have a significant different mean CLOCK value
+```{r, echo=FALSE}
+#some stats to explore the data
+group_by(CREB1, migrant) %>%
+  summarise(
+    count = n(),
+    mean = mean(mean_creb1, na.rm = TRUE),
+    sd = sd(mean_creb1, na.rm = TRUE)
+  )
+
+#Create subsets to do the t-test
+migrant <- df[which(df$migrant == 'yes'), ]
+nonmigrant <- df[which(df$migrant == 'no'), ]
+
+#t-test
+t.test(migrant$mean_creb1, nonmigrant$mean_creb1)
+```

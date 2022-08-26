@@ -112,6 +112,13 @@ sc <- scale_colour_gradientn(colours = myPalette(100), limits=c(1, 8))
 # FUNCTIONS
 # --------------------------------------------------------------------------
 
+data_summary <- function(x) {
+  m <- mean(x)
+  ymin <- m - sd(x)
+  ymax <- m + sd(x)
+  return(c(y = m, ymin = ymin, ymax = ymax))
+}
+
 global_map <- function(data) {
   aus_map <- ggplot(data = data) +
   geom_sf(fill = island_colour, color = NA) +

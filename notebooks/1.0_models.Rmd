@@ -102,9 +102,9 @@ model_creb <- brm(
   control = list(max_treedepth = 15, adapt_delta = 0.99))
 
 plot_creb <- model_creb %>%
-  spread_draws(b_Intercept, r_pop[pop,]) %>%
-  mutate(condition_mean = b_Intercept + r_pop) %>%
-  ggplot(aes(y = fct_reorder(pop,condition_mean), x = condition_mean)) +
+  spread_draws(b_Intercept, r_population[population,]) %>%
+  mutate(condition_mean = b_Intercept + r_population) %>%
+  ggplot(aes(y = fct_reorder(population,condition_mean), x = condition_mean)) +
   theme_minimal() + 
   xlab("Mean CREB1 length (bp)") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),

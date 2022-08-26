@@ -1,0 +1,361 @@
+---
+title: "0.0_plots"
+author: "Andrea Estandia<br>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+<br>
+
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+
+Figure 2.
+```{r}
+CREB1 <-
+    read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv")) %>%
+    mutate_if(is.character, as.factor) 
+
+qmatrix <- 
+  read_csv(file.path(reports_path, "ngsadmix/k2.csv")) %>% 
+  #read_csv(file.path(data_path, "ngsadmix/k2.csv")) %>%
+    gather("cluster", "freq", k1, k2) %>%
+    mutate(pop = factor(
+      pop,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "Aotearoa/New Zealand",
+        "Chatham Islands",
+        "Norfolk Island",
+        "Heron Island",
+        "Lord Howe Island",
+        "Grand Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Efate",
+        "Gaua",
+        "Malekula",
+        "Espiritu Santo",
+        "Tanna", 
+        "Pentecost",
+        "Ambae"
+      )
+    ))
+
+set.seed(123)
+group.colors <- c(k1 = "#474747", k2 = "#5498b3")
+
+structure_plot <-
+    qmatrix %>%
+    arrange(pop) %>%
+    ggplot(aes(x = freq, y = id)) +
+    geom_barh(aes(fill = cluster,
+                 colour = cluster),
+             stat = "identity",
+             width = 1) +
+    scale_fill_manual(values = group.colors) +
+    scale_colour_manual(values = group.colors) +
+    facet_grid(pop ~ .,
+                switch = "y",
+                scales = "free_y",
+                space = "fixed") +
+    theme_void() +
+    theme(
+      panel.spacing.x = unit(0.25, "lines"),
+      strip.text.y.left = element_text(
+        size = 10,
+        angle = 0,
+        hjust = 1,
+        margin = margin(r = 10),
+        family = "Helvetica-Narrow"
+      ),
+      legend.position = 'none'
+    )
+
+  # Allelic length plot
+CREB_length_plot <-
+    CREB1 %>% 
+    filter(population != "Erromango") %>% 
+    ggplot(aes(
+      x = 10 * locator,
+      y = mean_creb1,
+      color = cluster
+    )) +
+    coord_flip() +
+    scale_x_reverse() +
+    theme(
+      legend.position = "none",
+      axis.text.x = element_text(),
+      axis.text.y = element_blank(),
+      panel.grid = element_blank(),
+      axis.ticks = element_blank()
+    ) +
+    geom_jitter(
+      size = 2,
+      alpha = 0.2,
+      width = 0,
+      height = 0.1
+    ) +
+    stat_summary(
+      aes(group = cluster),
+      geom = "pointrange",
+      fun.data = mean_cl_boot,
+      size = 1
+    ) +
+    scale_color_manual(values = group.colors) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 10)) +
+    labs(x = NULL, y = "\nMean CREB1 length (bp)")
+
+  
+  # Plot both together
+  
+structure_creb1 <- structure_plot +
+    CREB_length_plot +
+    plot_layout(widths = c(0.5, 2)) +
+    plot_annotation(theme = theme(plot.margin =
+                                    unit(c(1, 1, 1, 1), "cm")))
+  
+ggsave(
+  plot = structure_creb1,
+  filename = "structure_creb1.svg",
+  path = figures_path,
+  device = "svg",
+  scale=1,
+  width = 15,
+  height = 20,
+  dpi = 400,
+  units = "cm"
+)
+```
+
+k3, k4 and k5
+```{r}
+set.seed(123)
+group.colors_k3 <- c(k1 = "#5498b3", k2 = "#474747", k3 = "#db821d")
+
+qmatrix_k3 <- 
+  read_csv(file.path(reports_path, "ngsadmix/k3.csv")) %>% 
+  #read_csv(file.path(data_path, "ngsadmix/k3.csv")) %>%
+    gather("cluster", "freq", k1, k2, k3) %>%
+    mutate(pop = factor(
+      pop,
+      levels = c(
+       "Australia",
+        "Tasmania",
+        "Aotearoa/New Zealand",
+        "Chatham Islands",
+        "Norfolk Island",
+        "Heron Island",
+        "Lord Howe Island",
+        "Grand Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Efate",
+        "Gaua",
+        "Malekula",
+        "Espiritu Santo",
+        "Tanna", 
+        "Pentecost",
+        "Ambae"
+      )
+    ))
+
+structure_plot_k3 <-
+    qmatrix_k3 %>%
+    arrange(pop) %>%
+    ggplot(aes(x = freq, y = id)) +
+    geom_barh(aes(fill = cluster,
+                 colour = cluster),
+             stat = "identity",
+             width = 1) +
+    scale_fill_manual(values = group.colors_k3) +
+    scale_colour_manual(values = group.colors_k3) +
+    facet_grid(pop ~ .,
+                switch = "y",
+                scales = "free_y",
+                space = "fixed") +
+    theme_void() +
+    theme(
+      panel.spacing.x = unit(0.25, "lines"),
+      strip.text.y.left = element_text(
+        size = 10,
+        angle = 0,
+        hjust = 1,
+        margin = margin(r = 10),
+        family = "Helvetica-Narrow"
+      ),
+      legend.position = 'none'
+    )
+
+group.colors_k4 <- c(k1 = "#5498b3", k2 = "#474747", k3 = "#db821d", k4 ="#365869")
+
+qmatrix_k4 <- 
+  read_csv(file.path(reports_path, "ngsadmix/k4.csv")) %>% 
+    gather("cluster", "freq", k1, k2, k3, k4) %>%
+    mutate(pop = factor(
+      pop,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "Aotearoa/New Zealand",
+        "Chatham Islands",
+        "Norfolk Island",
+        "Heron Island",
+        "Lord Howe Island",
+        "Grand Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Efate",
+        "Gaua",
+        "Malekula",
+        "Espiritu Santo",
+        "Tanna", 
+        "Pentecost",
+        "Ambae"
+      )
+    ))
+
+structure_plot_k4 <-
+    qmatrix_k4 %>%
+    arrange(pop) %>%
+    ggplot(aes(x = freq, y = id)) +
+    geom_barh(aes(fill = cluster,
+                 colour = cluster),
+             stat = "identity",
+             width = 1) +
+    scale_fill_manual(values = group.colors_k4) +
+    scale_colour_manual(values = group.colors_k4) +
+    facet_grid(pop ~ .,
+                switch = "y",
+                scales = "free_y",
+                space = "fixed") +
+    theme_void() +
+    theme(
+      panel.spacing.x = unit(0.25, "lines"),
+      strip.text.y.left = element_text(
+        size = 10,
+        angle = 0,
+        hjust = 1,
+        margin = margin(r = 10),
+        family = "Helvetica-Narrow"
+      ),
+      legend.position = 'none'
+    )
+
+group.colors <- c(k1 = "#5498b3", k2 = "#474747", k3 = "#db821d", k4 ="#365869", k5="#d6a01a")
+
+qmatrix_k5 <- 
+  read_csv(file.path(reports_path, "ngsadmix/k5.csv")) %>% 
+    gather("cluster", "freq", k1, k2, k3, k4, k5) %>%
+    mutate(pop = factor(
+      pop,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "Aotearoa/New Zealand",
+        "Chatham Islands",
+        "Norfolk Island",
+        "Heron Island",
+        "Lord Howe Island",
+        "Grand Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Efate",
+        "Gaua",
+        "Malekula",
+        "Espiritu Santo",
+        "Tanna", 
+        "Pentecost",
+        "Ambae"
+      )
+    ))
+
+structure_plot_k5 <-
+    qmatrix_k5 %>%
+    arrange(pop) %>%
+    ggplot(aes(x = freq, y = id)) +
+    geom_barh(aes(fill = cluster,
+                 colour = cluster),
+             stat = "identity",
+             width = 1) +
+    scale_fill_manual(values = group.colors) +
+    scale_colour_manual(values = group.colors) +
+    facet_grid(pop ~ .,
+                switch = "y",
+                scales = "free_y",
+                space = "fixed") +
+    theme_void() +
+    theme(
+      panel.spacing.x = unit(0.25, "lines"),
+      strip.text.y.left = element_text(
+        size = 10,
+        angle = 0,
+        hjust = 1,
+        margin = margin(r = 10),
+        family = "Helvetica-Narrow"
+      ),
+      legend.position = 'none'
+    )
+
+k2_5 <- structure_plot+structure_plot_k3+structure_plot_k4+structure_plot_k5+plot_layout(ncol=4)
+k2_5
+
+ggsave(
+  plot = k2_5,
+  filename = "k2_5.svg",
+  path = figures_path,
+  device = "svg",
+  scale=1,
+  width = 25,
+  height = 15,
+  dpi = 400,
+  units = "cm"
+)
+```
+
+Heatmap covariance matrix
+```{r}
+cov_matrix <- read_csv(file.path(reports_path, "pcangsd/output.cov"))
+cov_matrix_pop <- read_csv(file.path(reports_path, "pcangsd/output_pop.csv"))
+
+row.names(cov_matrix) <- colnames(cov_matrix)
+row.names(cov_matrix_pop) <- colnames(cov_matrix_pop)
+```
+
+```{r}
+pop_str_heatmap <- heatmap(as.matrix(cov_matrix),symm=T,col=brewer.pal(9,"Blues"),labCol = FALSE)
+pop_str_heatmap_pop <- heatmap(as.matrix(cov_matrix_pop),symm=T,col=brewer.pal(9,"Blues"),labCol = FALSE)
+ggsave(
+  plot = pop_str_heatmap,
+  filename = "pop_str_heatmap.pdf",
+  path = figures_path,
+  device = "pdf",
+  scale=1,
+  width = 15,
+  height = 15,
+  dpi = 400,
+  units = "cm"
+)
+```
+
