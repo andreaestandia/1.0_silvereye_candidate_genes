@@ -1,0 +1,37 @@
+---
+title: "1.0_basic_stats"
+author: "Andrea Estandia<br>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+<br>
+
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+
+
+```{r}
+divBasic(
+  infile = file.path(
+    data_path,
+    "subset-genotype-phenotype-genpop"
+  ),
+  outfile = file.path(
+    reports_path,"diversity_stats/diveRsity_basicStats"),
+  mcRep = 2000
+)
+```
+
