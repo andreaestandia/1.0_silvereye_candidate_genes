@@ -44,16 +44,16 @@ df <-
   mutate_if(is.character, as.factor)
 
 CREB1 <- df %>%
-  drop_na(short_creb1)
+  drop_na(mean_creb1)
 
 ADCYAP <- df %>%
-  drop_na(short_adcyap)
+  drop_na(mean_adcyap)
 
 CLOCK <- df %>%
-  drop_na(short_clock)
+  drop_na(mean_clock)
 
 NPAS2 <- df %>%
-  drop_na(short_npas2)
+  drop_na(mean_npas2)
 ```
 
 ANOVA and Tukey tests for DRD4 and SERT
@@ -109,11 +109,10 @@ migratory.subset_total <- df %>%
   mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
   mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
   mutate(population==as.factor(population))
-   
+  
+```
 
-clock.migr.aov <- aov(mean_clock ~ population, data = migratory.subset_total)
-clock.migr.tukey <- TukeyHSD(clock.migr.aov)
-
+```{r}
 list_variants <- colnames(migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))])
 subset_variants <- migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))]
 
@@ -135,6 +134,71 @@ pairwise.t.test(CREB1$mean_creb1, CREB1$population, p.adj = 'bonf')
 pairwise.t.test(CLOCK$mean_clock, CLOCK$population, p.adj = 'bonf')
 pairwise.t.test(ADCYAP$mean_adcyap, ADCYAP$population, p.adj = 'bonf')
 pairwise.t.test(NPAS2$mean_npas2, NPAS2$population, p.adj = 'bonf')
+
+mod_creb1 <- brm(
+  mean_creb1 ~ population,
+  data = CREB1
+)
+
+CREB1$population <- droplevels(CREB1$population)
+
+CREB1 %>%
+  data_grid(population) %>%
+  #filter(population != "Pentecost") %>%
+  add_fitted_draws(mod_creb1) %>%
+  ggplot(aes(x = .value, y = population)) +
+  stat_dotsinterval(quantiles = 100)+
+ # scale_fill_manual(values = c("#ccb416", "#538699"))+
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust=1, size = text_size),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title = element_text(size = text_size),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "#424242"))+
+  labs(
+    x = "CLOCK mean lenght(bp)",
+    title = "Posterior estimates of the group means"
+  )
+
+```
+
+Do partial migrants and the rest of the populations have a significant different mean CLOCK value?
+```{r}
+migratory.subset <- 
+  migratory.subset_total %>% 
+  filter(population != "Australia")
+
+mod <- brm(
+  mean_clock ~ population,
+  data = migratory.subset
+)
+
+migratory.subset %>%
+  data_grid(population) %>%
+  add_fitted_draws(mod) %>%
+  ggplot(aes(x = .value, y = population, fill=population)) +
+  stat_dotsinterval(quantiles = 100)+
+  scale_fill_manual(values = c("#ccb416", "#538699"))+
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust=1, size = text_size),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title = element_text(size = text_size),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "#424242"))+
+  labs(
+    x = "CLOCK mean lenght(bp)",
+    title = "Posterior estimates of the group means"
+  )
 ```
 
 T-test to know whether partial migrants and the rest of the populations have a significant different mean CLOCK value

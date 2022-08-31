@@ -374,7 +374,7 @@ creb1.plot <- CREB1 %>%
       "Malekula",
       "Ambrym",
       "Efate",
-      "Erromango",
+      "",
       "Tanna"
     )
   ) +
@@ -486,7 +486,7 @@ CREB1 %>%
       "Malekula",
       "Ambrym",
       "Efate",
-      "Erromango",
+      "",
       "Tanna"
     )
   ) +
@@ -512,31 +512,18 @@ CREB1 %>%
   ) +
   theme(legend.position = "none")
 
-all.plot <- plot_grid(
-  creb1.plot + theme(legend.position = "none"),
-  clock.plot + theme(legend.position = "none"),
-  adcyap1.plot + theme(legend.position = "none"),
-  npas2.plot + theme(legend.position = "none"),
-  labels = c("CREB1", "CLOCK", "ADCYAP1", "NPAS2"),
-  nrow = 2,
-  ncol = 2
-)
-legend <- get_legend(adcyap1.plot)
-all.plot <- plot_grid(all.plot, legend, rel_widths = c(3, .3))
-
-creb1.plot+clock.plot+adcyap1.plot+npas2.plot+plot_layout(ncol=2)
-all.plot <- ggarrange(creb1.plot,clock.plot,adcyap1.plot, npas2.plot, common.legend = TRUE, ncol=2 ,nrow=2, legend="bottom")
+all.plot<- creb1.plot+clock.plot+adcyap1.plot+npas2.plot+plot_layout(ncol=2)
+all.plot <- ggarrange(creb1.plot,clock.plot,npas2.plot,adcyap1.plot, common.legend = TRUE, ncol=2 ,nrow=2, legend="bottom")
 
 all.plot
 
 ggsave(
   plot = all.plot,
-  filename = "all.plot.png",
+  filename = "all.plot.svg",
   path = figures_path,
-  device = "png",
-  scale=1,
-  width = 27,
-  height = 22,
+  device = "svg",
+  width = 60,
+  height = 20,
   dpi = 400,
   units = "cm"
 )
@@ -586,9 +573,9 @@ dp <- ggplot(
 
 ggsave(
   plot = dp,
-  filename = "clock.png",
+  filename = "clock.svg",
   path = figures_path,
-  device = "png",
+  device = "svg",
   scale=1,
   width = 10,
   height = 10,

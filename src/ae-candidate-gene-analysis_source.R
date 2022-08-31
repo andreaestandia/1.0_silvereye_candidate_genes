@@ -100,6 +100,8 @@ subset_australia <- subset(island_info,
                            country != "Vanuatu" &
                              country != "New Caledonia")
 
+text_size=12
+
 ##COLOURS FOR MAP##
 island_colour <- "#999999"
 background_colour <- "#f0f0f0"
@@ -675,6 +677,7 @@ geneflow_map <- function(data) {
   geneflow_map <- map + map2
   return(geneflow_map)
 }
+
 # ----------------------------------------------------------------------------------- #
 # Function adapted from the mcp source code (Liedvogel 2020) by Andrea Estandia 2020
 # ----------------------------------------------------------------------------------- #

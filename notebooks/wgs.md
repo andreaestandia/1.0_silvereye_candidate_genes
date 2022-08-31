@@ -7,6 +7,8 @@ Subset file so it can be used as input for PCAngsd and NGSadmix
 head -n 1 wholegenome_pruned.beagle > header
 #Pick 10000 lines at random
 shuf -n 10000 wholegenome_pruned.beagle > wholegenome_pruned_1million.beagle
+#OR if file is too big for your computer to handle
+cat wholegenome_pruned.beagle | awk 'BEGIN {srand()} !/^$/ { if (rand() <= .01) print $0}' > wholegenome_pruned_1million.beagle
 #Paste header
 cat header wholegenome_pruned_1million.beagle > wholegenome_pruned_1million.beagle
 #Keep only samples that are common to WGS and candidate genes (samples2keep)
