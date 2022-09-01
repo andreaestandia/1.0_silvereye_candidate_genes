@@ -1,0 +1,102 @@
+---
+  title: "1.0_model_migrants"
+author: "Andrea Estandia<br>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+  toc: true
+toc_depth: 4
+editor_options:
+  chunk_output_type: console
+---
+  <br>
+  
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+
+Read data and create keep only CLOCK data
+
+```{r, echo=FALSE}
+CLOCK <-
+  read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv")) %>%
+  mutate_if(is.character, as.factor) %>% 
+  drop_na(mean_clock)
+```
+
+
+Create subset with only Australia, Tasmania and Tasmanian migrants removing those birds that weren't caught in winter. Test whether there are differences between migrants, Australians and Tasmanian individuals
+
+```{r}
+migratory.subset_total <- df %>%
+  filter(population %in% c("Australia","Tasmania")) %>%
+  dplyr::arrange(population) %>%
+  mutate(date2 = dmy(date)) %>% 
+  mutate(month=month(date2)) %>% 
+  filter(((population=="Australia" & month >= 4 & month <= 10 ))|
+          migrant == "yes" |
+          (population == "Tasmania" & month == 6)) %>% 
+  mutate(population==as.character(population)) %>% 
+  mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
+  mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
+  mutate(population==as.factor(population))
+  
+```
+
+Run a frequentist approach to explore difference in means across populations
+```{r}
+list_variants <- colnames(migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))])
+subset_variants <- migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))]
+
+list_variants_out <- list()
+for (variant in list_variants){
+  tmp <- migratory.subset_total %>%
+  dplyr::select(name, population, variant, locator) %>%
+  drop_na(variant)
+  #print(summary(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+  print(variant)
+  print(TukeyHSD(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
+}
+```
+
+
+A Bayesian approach: Do partial migrants and the rest of the populations have a significant different mean CLOCK value?
+```{r}
+migratory.subset <- 
+  migratory.subset_total %>% 
+  filter(population != "Australia")
+
+mod <- brm(
+  mean_clock ~ population,
+  data = migratory.subset
+)
+
+migratory.subset %>%
+  data_grid(population) %>%
+  add_fitted_draws(mod) %>%
+  ggplot(aes(x = .value, y = population, fill=population)) +
+  stat_dotsinterval(quantiles = 100)+
+  scale_fill_manual(values = c("#ccb416", "#538699"))+
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust=1, size = text_size),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title = element_text(size = text_size),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "#424242"))+
+  labs(
+    x = "CLOCK mean lenght(bp)",
+    title = "Posterior estimates of the group means"
+  )
+```

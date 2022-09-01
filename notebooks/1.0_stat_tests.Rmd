@@ -22,20 +22,6 @@ options(scipen = 999)
 source("./src/ae-candidate-gene-analysis_source.R")
 ```
 
-Read allelic richness data and Ho
-```{r}
-ar.c <-read_csv("data/allelic-richness-candidate.csv")
-ho.c <-read_csv("data/allelic-richness-candidate.csv")
-```
-
-T-test for differences between clusters
-```{r}
-list_genes <- colnames(ar.c[,c(3:6)])
-
-purrr::map(ar.c[3:6], ~t.test(.x ~ ar.c$archipelago))
-purrr::map(ho.c[3:6], ~t.test(.x ~ ho.c$archipelago))
-```
-
 Read data and create subset by gene
 
 ```{r, echo=FALSE}
@@ -44,7 +30,9 @@ df <-
   mutate_if(is.character, as.factor)
 
 CREB1 <- df %>%
-  drop_na(mean_creb1)
+  drop_na(mean_creb1) %>% 
+  mutate(mean_creb1=as.numeric(unlist(mean_creb1))) %>% 
+  filter(mean_creb1!=552.5)
 
 ADCYAP <- df %>%
   drop_na(mean_adcyap)
@@ -95,45 +83,18 @@ for (variant in list_variants){
 }
 ```
 
-Create subset with only Australia, Tasmania and Tasmanian migrants removing those birds that weren't caught in winter. Test whether there are differences between migrants, Australians and Tasmanian individuals
-```{r}
-migratory.subset_total <- df %>%
-  filter(population %in% c("Australia","Tasmania")) %>%
-  dplyr::arrange(population) %>%
-  mutate(date2 = dmy(date)) %>% 
-  mutate(month=month(date2)) %>% 
-  filter(((population=="Australia" & month >= 4 & month <= 10 ))|
-          migrant == "yes" |
-          (population == "Tasmania" & month == 6)) %>% 
-  mutate(population==as.character(population)) %>% 
-  mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
-  mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
-  mutate(population==as.factor(population))
-  
-```
+BRMS models exploring changes in candidate gene lengths by population
 
 ```{r}
-list_variants <- colnames(migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))])
-subset_variants <- migratory.subset_total[,grep("DRD|SERT|mean_adcyap|mean_clock|mean_creb1|mean_npas2", colnames(migratory.subset_total))]
+snp83 <-df %>%
+    dplyr::select(population, DRD12_snp83) %>%
+    drop_na(DRD12_snp83)
 
-list_variants_out <- list()
-for (variant in list_variants){
-  tmp <- migratory.subset_total %>%
-  dplyr::select(name, population, variant, locator) %>%
-  drop_na(variant)
-  #print(summary(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
-  print(variant)
-  print(TukeyHSD(aov(as.formula(paste0(as.character(variant), "~ population")), data = tmp)))
-}
-```
-
-Pairwise t-test for allele length
-
-```{r, echo=FALSE}
-pairwise.t.test(CREB1$mean_creb1, CREB1$population, p.adj = 'bonf')
-pairwise.t.test(CLOCK$mean_clock, CLOCK$population, p.adj = 'bonf')
-pairwise.t.test(ADCYAP$mean_adcyap, ADCYAP$population, p.adj = 'bonf')
-pairwise.t.test(NPAS2$mean_npas2, NPAS2$population, p.adj = 'bonf')
+mod_snp83 <- brm(
+  DRD12_snp83|trials(1) ~ population,
+  data = snp83,
+  family=binomial
+)
 
 mod_creb1 <- brm(
   mean_creb1 ~ population,
@@ -142,13 +103,36 @@ mod_creb1 <- brm(
 
 CREB1$population <- droplevels(CREB1$population)
 
-CREB1 %>%
-  data_grid(population) %>%
+mod_creb1_plot <- CREB1 %>%
+  mutate(population = factor(
+      population,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Efate",
+        "Gaua",
+        "Malekula",
+        "Espiritu_Santo",
+        "Tanna"
+      )
+    )) %>% 
+  data_grid(population, cluster) %>%
   #filter(population != "Pentecost") %>%
   add_fitted_draws(mod_creb1) %>%
   ggplot(aes(x = .value, y = population)) +
-  stat_dotsinterval(quantiles = 100)+
- # scale_fill_manual(values = c("#ccb416", "#538699"))+
+  stat_dotsinterval(quantiles = 50,size=2)+
+  scale_fill_manual(values = c("#ccb416", "#538699"))+
+  scale_color_manual(values = c("#ccb416", "#538699"))+
   theme_minimal() +
   theme(
     legend.position = "none",
@@ -156,34 +140,56 @@ CREB1 %>%
     panel.grid.major.x = element_blank(),
     axis.text.x = element_text(hjust=1, size = text_size),
     axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
     axis.title = element_text(size = text_size),
     plot.title = element_text(face = "bold"),
     plot.subtitle = element_text(color = "#424242"))+
   labs(
-    x = "CLOCK mean lenght(bp)",
+    x = "\nCREB1 mean length (bp)",
     title = "Posterior estimates of the group means"
   )
-
 ```
 
-Do partial migrants and the rest of the populations have a significant different mean CLOCK value?
 ```{r}
-migratory.subset <- 
-  migratory.subset_total %>% 
-  filter(population != "Australia")
-
-mod <- brm(
+mod_clock <- brm(
   mean_clock ~ population,
-  data = migratory.subset
+  data = CLOCK
 )
 
-migratory.subset %>%
-  data_grid(population) %>%
-  add_fitted_draws(mod) %>%
-  ggplot(aes(x = .value, y = population, fill=population)) +
-  stat_dotsinterval(quantiles = 100)+
+CLOCK$population <- droplevels(CLOCK$population)
+
+mod_clock_plot <- 
+  CLOCK %>%
+  mutate(population = factor(
+      population,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Gaua",
+        "Malekula",
+        "Erromango",
+        "Pentecost",
+        "Espiritu_Santo",
+        "Efate",
+        "Tanna"
+      )
+    )) %>% 
+  data_grid(population, cluster) %>%
+  #filter(population != "Pentecost") %>%
+  add_fitted_draws(mod_clock) %>%
+  ggplot(aes(x = .value, y = population)) +
+  stat_dotsinterval(quantiles = 50,size=2)+
   scale_fill_manual(values = c("#ccb416", "#538699"))+
+  scale_color_manual(values = c("#ccb416", "#538699"))+
   theme_minimal() +
   theme(
     legend.position = "none",
@@ -191,30 +197,141 @@ migratory.subset %>%
     panel.grid.major.x = element_blank(),
     axis.text.x = element_text(hjust=1, size = text_size),
     axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
     axis.title = element_text(size = text_size),
     plot.title = element_text(face = "bold"),
     plot.subtitle = element_text(color = "#424242"))+
   labs(
-    x = "CLOCK mean lenght(bp)",
+    x = "\nCLOCK mean length (bp)",
+    title = "Posterior estimates of the group means"
+  )
+
+```
+
+```{r}
+mod_adcyap1 <- brm(
+  mean_adcyap ~ population,
+  data = ADCYAP
+)
+
+ADCYAP$population <- droplevels(ADCYAP$population)
+
+mod_adcyap_plot <- ADCYAP %>%
+  mutate(population = factor(
+      population,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Gaua",
+        "Malekula",
+        "Erromango",
+        "Pentecost",
+        "Espiritu_Santo",
+        "Efate",
+        "Tanna"
+      )
+    )) %>% 
+  data_grid(population, cluster) %>%
+  #filter(population != "Pentecost") %>%
+  add_fitted_draws(mod_adcyap1) %>%
+  ggplot(aes(x = .value, y = population)) +
+  stat_dotsinterval(quantiles = 50,size=2)+
+  scale_fill_manual(values = c("#ccb416", "#538699"))+
+  scale_color_manual(values = c("#ccb416", "#538699"))+
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust=1, size = text_size),
+    axis.title.y = element_blank(),
+    axis.title = element_text(size = text_size),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "#424242"))+
+  labs(
+    x = "\nADCYAP1 mean length (bp)",
     title = "Posterior estimates of the group means"
   )
 ```
 
-T-test to know whether partial migrants and the rest of the populations have a significant different mean CLOCK value
-```{r, echo=FALSE}
-#some stats to explore the data
-group_by(CREB1, migrant) %>%
-  summarise(
-    count = n(),
-    mean = mean(mean_creb1, na.rm = TRUE),
-    sd = sd(mean_creb1, na.rm = TRUE)
+```{r}
+mod_npas <- brm(
+  mean_npas2 ~ population,
+  data = NPAS2
+)
+
+NPAS2$population <- droplevels(NPAS2$population)
+
+mod_npas_plot <-
+  NPAS2 %>%
+  mutate(population = factor(
+      population,
+      levels = c(
+        "Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Ambrym",
+        "Gaua",
+        "Malekula",
+        "Erromango",
+        "Pentecost",
+        "Espiritu_Santo",
+        "Efate",
+        "Tanna"
+      )
+    )) %>% 
+  data_grid(population, cluster) %>%
+  #filter(population != "Pentecost") %>%
+  add_fitted_draws(mod_npas) %>%
+  ggplot(aes(x = .value, y = population)) +
+  stat_dotsinterval(quantiles = 50,size=2)+
+  scale_fill_manual(values = c("#ccb416", "#538699"))+
+  scale_color_manual(values = c("#ccb416", "#538699"))+
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(hjust=1, size = text_size),
+    axis.title.y = element_blank(),
+    axis.title = element_text(size = text_size),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "#424242"))+
+  labs(
+    x = "\nNPAS2 mean length (bp)",
+    title = "Posterior estimates of the group means"
   )
-
-#Create subsets to do the t-test
-migrant <- df[which(df$migrant == 'yes'), ]
-nonmigrant <- df[which(df$migrant == 'no'), ]
-
-#t-test
-t.test(migrant$mean_creb1, nonmigrant$mean_creb1)
 ```
+
+```{r}
+mod_cand <- mod_creb1_plot+mod_clock_plot+mod_npas_plot+mod_adcyap_plot
+
+ggsave(
+  plot = mod_cand,
+  filename = "mod_cand.svg",
+  path = figures_path,
+  device = "svg",
+  width = 1000,
+  height = 700,
+  dpi = 400,
+  units = "cm"
+)
+```
+
