@@ -35,7 +35,7 @@ CLOCK <-
 Create subset with only Australia, Tasmania and Tasmanian migrants removing those birds that weren't caught in winter. Test whether there are differences between migrants, Australians and Tasmanian individuals
 
 ```{r}
-migratory.subset_total <- df %>%
+migratory.subset_total <- CLOCK %>%
   filter(population %in% c("Australia","Tasmania")) %>%
   dplyr::arrange(population) %>%
   mutate(date2 = dmy(date)) %>% 
@@ -46,7 +46,8 @@ migratory.subset_total <- df %>%
   mutate(population==as.character(population)) %>% 
   mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
   mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
-  mutate(population==as.factor(population))
+  mutate(population==as.factor(population)) %>% 
+  filter(migrant!="NA")
   
 ```
 
@@ -73,17 +74,47 @@ migratory.subset <-
   migratory.subset_total %>% 
   filter(population != "Australia")
 
+get_prior(mean_clock ~ population,
+  data = migratory.subset)
+
+bprior <- prior(normal(0,20), class = b)
+
 mod <- brm(
   mean_clock ~ population,
-  data = migratory.subset
-)
+  data = migratory.subset,
+  prior = bprior)
 
-migratory.subset %>%
+migratory_raw <- migratory.subset %>% 
+  ggplot(
+    aes(
+    x = fct_reorder(population, mean_clock),
+    y = mean_clock,
+    color = population,
+    fill = population
+  )
+) +
+  geom_dotplot(
+    binaxis = 'y',
+    stackdir = 'center',
+    binwidth = 0.12,
+    dotsize = 1.5
+  ) +
+  labs(x = "", y = "Mean CLOCK length (bp)\n") + 
+  #stat_summary(fun.data = data_summary, color ="black") + 
+  scale_x_discrete(breaks=c("Australia", "Tasmania non-migrants", "Tasmania migrants"),
+                   labels =c("Australia", "Tasmania non-migrants", "Tasmania migrants"))+
+  scale_fill_manual(values = c("grey", "grey")) + 
+  scale_color_manual(values = c("grey", "grey")) +
+  theme_minimal() + 
+  theme(legend.position = "none",
+        panel.grid.major = element_blank()) 
+
+
+migratory_posterior <- migratory.subset %>%
   data_grid(population) %>%
   add_fitted_draws(mod) %>%
-  ggplot(aes(x = .value, y = population, fill=population)) +
+  ggplot(aes(x = .value, y = population)) +
   stat_dotsinterval(quantiles = 100)+
-  scale_fill_manual(values = c("#ccb416", "#538699"))+
   theme_minimal() +
   theme(
     legend.position = "none",
@@ -91,12 +122,13 @@ migratory.subset %>%
     panel.grid.major.x = element_blank(),
     axis.text.x = element_text(hjust=1, size = text_size),
     axis.title.y = element_blank(),
-    axis.title.x = element_blank(),
     axis.title = element_text(size = text_size),
     plot.title = element_text(face = "bold"),
     plot.subtitle = element_text(color = "#424242"))+
   labs(
-    x = "CLOCK mean lenght(bp)",
+    x = "\nCLOCK mean length (bp)",
     title = "Posterior estimates of the group means"
   )
+
+migratory_raw + migratory_posterior+plot_annotation(tag_levels = 'A')
 ```

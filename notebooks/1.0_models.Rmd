@@ -272,4 +272,13 @@ mcp_creb_age$loo = loo(mcp_creb_age)
 loo_compare(mcp_null_creb_age$loo, mcp_creb_age$loo)
 ```
 
+```{r}
+library(kableExtra)
+library(broom)
+tidy(model_creb) %>% 
+  filter(grepl(term, pattern = '^b')) %>% 
+  mutate(term = c('Intercept', 'Math', 'Male', 'General', 'Academic')) %>% 
+  rename_all(str_to_title) %>% 
+  kable(digits = 2)
 
+```

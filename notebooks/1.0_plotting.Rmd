@@ -546,9 +546,10 @@ migratory.subset_total <- df %>%
   mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
   mutate(population==as.factor(population))
 
-dp <- ggplot(
-  migratory.subset_total,
-  aes(
+dp <- migratory.subset_total %>% 
+  filter(population != "Australia") %>% 
+  ggplot(
+    aes(
     x = fct_reorder(population, mean_clock),
     y = mean_clock,
     color = population,
