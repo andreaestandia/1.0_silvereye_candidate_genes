@@ -88,7 +88,7 @@ null_creb1 <- brm(
   seed = 123, 
   control = list(max_treedepth = 30, adapt_delta = 0.99))
 
-model_creb <- brm(
+model_creb1 <- brm(
   mean_creb1 ~ disp_index + 
     age_myr +
     (1 | gr(population,cov=cov_matrix)),
@@ -101,7 +101,7 @@ model_creb <- brm(
   seed = 123, 
   control = list(max_treedepth = 15, adapt_delta = 0.99))
 
-plot_creb <- model_creb %>%
+plot_creb <- model_creb1 %>%
   spread_draws(b_Intercept, r_population[population,]) %>%
   mutate(condition_mean = b_Intercept + r_population) %>%
   ggplot(aes(y = fct_reorder(population,condition_mean), x = condition_mean)) +
@@ -111,15 +111,15 @@ plot_creb <- model_creb %>%
         axis.title.y = element_blank()) +
   stat_halfeye() 
 
-model_creb$loo <- loo(model_creb)
+model_creb1$loo <- loo(model_creb1)
 null_creb1$loo <- loo(null_creb1)
-loo_compare(null_creb1$loo,model_creb$loo)
+loo_compare(null_creb1$loo,model_creb1$loo)
 ```
 
 Posterior predictive checks and conditional effects - CREB1
 ```{r}
-pp_check(model_creb, nsamples =1000)
-conditional_effects(model_creb)
+pp_check(model_creb_poisson, nsamples =1000)
+conditional_effects(model_creb_poisson)
 ```
 
 
@@ -275,7 +275,7 @@ loo_compare(mcp_null_creb_age$loo, mcp_creb_age$loo)
 ```{r}
 library(kableExtra)
 library(broom)
-tidy(model_creb) %>% 
+tidy(model_creb1) %>% 
   filter(grepl(term, pattern = '^b')) %>% 
   mutate(term = c('Intercept', 'Math', 'Male', 'General', 'Academic')) %>% 
   rename_all(str_to_title) %>% 

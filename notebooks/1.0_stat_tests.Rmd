@@ -91,9 +91,9 @@ snp83 <-df %>%
     drop_na(DRD12_snp83)
 
 mod_snp83 <- brm(
-  DRD12_snp83|trials(1) ~ population,
+  DRD12_snp83 ~ population,
   data = snp83,
-  family=binomial
+  family=bernoulli(link='identity')
 )
 
 mod_creb1 <- brm(

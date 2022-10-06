@@ -333,10 +333,10 @@
     },
     "cli": {
       "Package": "cli",
-      "Version": "2.0.2",
+      "Version": "3.4.1",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "ff0becff7bfdfe3f75d29aff8f3172dd"
+      "Hash": "0d297d01734d2bcea40197bd4971a764"
     },
     "clickR": {
       "Package": "clickR",
@@ -527,10 +527,10 @@
     },
     "ellipsis": {
       "Package": "ellipsis",
-      "Version": "0.3.1",
+      "Version": "0.3.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "fd2844b3a43ae2d27e70ece2df1b4e2a"
+      "Hash": "bb0eec2fe32e88d9e2836c2f73ea2077"
     },
     "emmeans": {
       "Package": "emmeans",
@@ -909,6 +909,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "84b0ee361e2f78d6b7d670db9471c0c5"
+    },
+    "kableExtra": {
+      "Package": "kableExtra",
+      "Version": "1.3.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "49b625e6aabe4c5f091f5850aba8ff78"
     },
     "knitr": {
       "Package": "knitr",
@@ -1726,6 +1733,13 @@
       "Repository": "CRAN",
       "Hash": "2edc6be3716db6d37cc61038a524f8d6"
     },
+    "svglite": {
+      "Package": "svglite",
+      "Version": "2.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "8fb6188960bf0f90996ce52f9c2106ac"
+    },
     "sys": {
       "Package": "sys",
       "Version": "3.3",
@@ -1840,10 +1854,10 @@
     },
     "vctrs": {
       "Package": "vctrs",
-      "Version": "0.3.1",
+      "Version": "0.4.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "1739235995f08583db4095a28c357207"
+      "Hash": "0e3dfc070b2a8f0478fcdf86fb33355d"
     },
     "viridis": {
       "Package": "viridis",
@@ -1858,6 +1872,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "ce4f6271baa94776db692f1cb2055bee"
+    },
+    "webshot": {
+      "Package": "webshot",
+      "Version": "0.5.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "7261ab7f98e97c771217e6b87c085d6e"
     },
     "whisker": {
       "Package": "whisker",

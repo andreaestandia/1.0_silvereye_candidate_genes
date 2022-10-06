@@ -36,16 +36,15 @@ Create subset with only Australia, Tasmania and Tasmanian migrants removing thos
 
 ```{r}
 migratory.subset_total <- CLOCK %>%
-  filter(population %in% c("Australia","Tasmania")) %>%
-  dplyr::arrange(population) %>%
+  filter(population %in% "Tasmania") %>%
   mutate(date2 = dmy(date)) %>% 
   mutate(month=month(date2)) %>% 
-  filter(((population=="Australia" & month >= 4 & month <= 10 ))|
+  filter(((population=="Tasmania" & state=="Queensland" & month >= 4 & month <= 10 ))|
           migrant == "yes" |
-          (population == "Tasmania" & month == 6)) %>% 
+          (population == "Tasmania" & state=="Tasmania" & month >=4 & month <=10)) %>% 
   mutate(population==as.character(population)) %>% 
-  mutate(population=ifelse(migrant=="yes", "Tasmania migrants", as.character(population))) %>% 
-  mutate(population=ifelse(population=="Tasmania", "Tasmania non-migrants", population)) %>% 
+  mutate(population=ifelse(migrant=="yes", "Tasmanian migrants", as.character(population))) %>% 
+  mutate(population=ifelse(population=="Tasmania", "Tasmanian non-migrants", population)) %>% 
   mutate(population==as.factor(population)) %>% 
   filter(migrant!="NA")
   
@@ -101,8 +100,8 @@ migratory_raw <- migratory.subset %>%
   ) +
   labs(x = "", y = "Mean CLOCK length (bp)\n") + 
   #stat_summary(fun.data = data_summary, color ="black") + 
-  scale_x_discrete(breaks=c("Australia", "Tasmania non-migrants", "Tasmania migrants"),
-                   labels =c("Australia", "Tasmania non-migrants", "Tasmania migrants"))+
+  scale_x_discrete(breaks=c("Australia", "Tasmanian non-migrants", "Tasmanian migrants"),
+                   labels =c("Australia", "Tasmanian non-migrants", "Tasmanian migrants"))+
   scale_fill_manual(values = c("grey", "grey")) + 
   scale_color_manual(values = c("grey", "grey")) +
   theme_minimal() + 
@@ -112,8 +111,8 @@ migratory_raw <- migratory.subset %>%
 
 migratory_posterior <- migratory.subset %>%
   data_grid(population) %>%
-  add_fitted_draws(mod) %>%
-  ggplot(aes(x = .value, y = population)) +
+  add_epred_draws(mod) %>%
+  ggplot(aes(x = .epred, y = population)) +
   stat_dotsinterval(quantiles = 100)+
   theme_minimal() +
   theme(
@@ -131,4 +130,5 @@ migratory_posterior <- migratory.subset %>%
   )
 
 migratory_raw + migratory_posterior+plot_annotation(tag_levels = 'A')
+plot(hypothesis(mod, "Intercept = Intercept + populationTasmaniannonMmigrants"))
 ```
