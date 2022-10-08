@@ -95,38 +95,50 @@ migratory_raw <- migratory.subset %>%
   geom_dotplot(
     binaxis = 'y',
     stackdir = 'center',
-    binwidth = 0.12,
+    # binwidth = 0.12,
     dotsize = 1.5
   ) +
-  labs(x = "", y = "Mean CLOCK length (bp)\n") + 
   #stat_summary(fun.data = data_summary, color ="black") + 
-  scale_x_discrete(breaks=c("Australia", "Tasmanian non-migrants", "Tasmanian migrants"),
-                   labels =c("Australia", "Tasmanian non-migrants", "Tasmanian migrants"))+
+  scale_x_discrete(breaks=c("Tasmanian non-migrants", "Tasmanian migrants"),
+                   labels =c("Tasmanian non-migrants", "Tasmanian migrants"))+
   scale_fill_manual(values = c("grey", "grey")) + 
   scale_color_manual(values = c("grey", "grey")) +
-  theme_minimal() + 
-  theme(legend.position = "none",
-        panel.grid.major = element_blank()) 
+  theme_minimal() +
+   theme(
+    legend.position = "none",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(size = text_size,family="ubuntu"),
+    axis.ticks = element_blank(),
+    axis.text.y = element_text(hjust=1, size = text_size,family="ubuntu"),
+    axis.title = element_text(size = text_size,family="ubuntu"),
+    plot.title = element_text(face = "bold",family="ubuntu"),
+    plot.subtitle = element_text(color = "#424242",family="ubuntu"))+
+  labs(x = "", y = "Mean CLOCK length (bp)\n", title="CLOCK length by migratory phenotype",
+         family="ubuntu")
 
 
 migratory_posterior <- migratory.subset %>%
   data_grid(population) %>%
-  add_epred_draws(mod) %>%
-  ggplot(aes(x = .epred, y = population)) +
+  add_fitted_draws(mod) %>%
+  ggplot(aes(x = .value, y = population)) +
+  #add_epred_draws(mod) %>%
+  #ggplot(aes(x = .epred, y = population)) +
   stat_dotsinterval(quantiles = 100)+
   theme_minimal() +
   theme(
     legend.position = "none",
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(hjust=1, size = text_size),
+    axis.text.x = element_text(hjust=1, size = text_size,family="ubuntu"),
+    axis.text.y = element_text(hjust=1, size = text_size,family="ubuntu"),
     axis.title.y = element_blank(),
-    axis.title = element_text(size = text_size),
-    plot.title = element_text(face = "bold"),
-    plot.subtitle = element_text(color = "#424242"))+
+    axis.title = element_text(size = text_size,family="ubuntu"),
+    plot.title = element_text(face = "bold",family="ubuntu"),
+    plot.subtitle = element_text(color = "#424242",family="ubuntu"))+
   labs(
-    x = "\nCLOCK mean length (bp)",
-    title = "Posterior estimates of the group means"
+    title = "Posterior estimates of the group means",
+    x = "\nMean CLOCK length (bp)"
   )
 
 migratory_raw + migratory_posterior+plot_annotation(tag_levels = 'A')

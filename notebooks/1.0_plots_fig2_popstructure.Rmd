@@ -37,7 +37,7 @@ qmatrix <-
       levels = c(
         "Australia",
         "Tasmania",
-        "Aotearoa/New Zealand",
+        "Aotearoa New Zealand",
         "Chatham Islands",
         "Norfolk Island",
         "Heron Island",
@@ -46,14 +46,16 @@ qmatrix <-
         "Ouvea",
         "Lifou",
         "Mare",
-        "Ambrym",
-        "Efate",
         "Gaua",
-        "Malekula",
         "Espiritu Santo",
-        "Tanna", 
+        "Malekula",
+        "Ambrym",
+        "Ambae",
         "Pentecost",
-        "Ambae"
+        "Efate",
+        "Tanna"
+        
+        
       )
     ))
 
@@ -166,14 +168,14 @@ qmatrix_k3 <-
         "Ouvea",
         "Lifou",
         "Mare",
-        "Ambrym",
-        "Efate",
         "Gaua",
-        "Malekula",
-        "Espiritu Santo",
-        "Tanna", 
+       "Espiritu Santo",
+       "Malekula",
+        "Ambrym",
+        "Ambae",
         "Pentecost",
-        "Ambae"
+        "Efate",
+        "Tanna"
       )
     ))
 
@@ -223,14 +225,14 @@ qmatrix_k4 <-
         "Ouvea",
         "Lifou",
         "Mare",
-        "Ambrym",
-        "Efate",
         "Gaua",
-        "Malekula",
-        "Espiritu Santo",
-        "Tanna", 
+       "Espiritu Santo",
+       "Malekula",
+        "Ambrym",
+        "Ambae",
         "Pentecost",
-        "Ambae"
+        "Efate",
+        "Tanna"
       )
     ))
 
@@ -280,14 +282,14 @@ qmatrix_k5 <-
         "Ouvea",
         "Lifou",
         "Mare",
-        "Ambrym",
-        "Efate",
         "Gaua",
-        "Malekula",
-        "Espiritu Santo",
-        "Tanna", 
+       "Espiritu Santo",
+       "Malekula",
+        "Ambrym",
+        "Ambae",
         "Pentecost",
-        "Ambae"
+        "Efate",
+        "Tanna"
       )
     ))
 
@@ -324,6 +326,21 @@ k2_5
 ggsave(
   plot = k2_5,
   filename = "k2_5.svg",
+  path = figures_path,
+  device = "svg",
+  scale=1,
+  width = 25,
+  height = 15,
+  dpi = 400,
+  units = "cm"
+)
+
+k2_4 <- structure_plot+structure_plot_k4+structure_plot_k4+structure_plot_k4+plot_layout(ncol=4)
+k2_4
+
+ggsave(
+  plot = k2_4,
+  filename = "k2_4.svg",
   path = figures_path,
   device = "svg",
   scale=1,

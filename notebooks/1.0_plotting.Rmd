@@ -104,11 +104,11 @@ npas2.plot <- NPAS2 %>%
       "Mare",
       "Gaua",
       "Espiritu Santo",
-      "Pentecost",
       "Malekula",
       "Ambrym",
-      "Efate",
+      "Pentecost",
       "Erromango",
+      "Efate",
       "Tanna"
     )
   ) +
@@ -117,12 +117,13 @@ npas2.plot <- NPAS2 %>%
   coord_fixed(ratio = 10) +
   theme_minimal() +
   theme(
+    legend.position = "none",
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(angle = 45, hjust=1, size = text_size),
-    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
-    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
-    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    axis.text.x = element_text(hjust=1, angle=45, size = text_size, family="ubuntu"),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20), family="ubuntu"),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15), family="ubuntu"),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10), family="ubuntu"),
     plot.subtitle = element_text(color = "#424242",
                                  size = text_size - (text_size / 100 * 20))
   ) +
@@ -193,11 +194,11 @@ adcyap1.plot <- ADCYAP %>%
       "Mare",
       "Gaua",
       "Espiritu Santo",
-      "Pentecost",
       "Malekula",
       "Ambrym",
-      "Efate",
+      "Pentecost",
       "Erromango",
+      "Efate",
       "Tanna"
     )
   ) +
@@ -209,10 +210,10 @@ adcyap1.plot <- ADCYAP %>%
     legend.position = "none",
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(hjust=1, angle=45, size = text_size),
-    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
-    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
-    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    axis.text.x = element_text(hjust=1, angle=45, size = text_size, family="ubuntu"),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20), family="ubuntu"),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15), family="ubuntu"),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10), family="ubuntu"),
     plot.subtitle = element_text(color = "#424242",
                                  size = text_size - (text_size / 100 * 20))
   ) +
@@ -230,7 +231,7 @@ clock.plot <- CLOCK %>%
   mutate(population = fct_reorder(population, locator_x)) %>%
   ggplot(aes(
     y = mean_clock,
-    x = 5 * (locator_x),
+    x = 5 * (locator),
     color = cluster
   )) +
   stat_summary(
@@ -281,11 +282,11 @@ clock.plot <- CLOCK %>%
       "Mare",
       "Gaua",
       "Espiritu Santo",
-      "Pentecost",
       "Malekula",
       "Ambrym",
-      "Efate",
+      "",
       "Erromango",
+      "Efate",
       "Tanna"
     )
   ) +
@@ -297,10 +298,10 @@ clock.plot <- CLOCK %>%
     legend.position = "none",
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(hjust = 1, angle = 45, size = text_size),
-    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
-    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
-    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    axis.text.x = element_text(hjust=1, angle=45, size = text_size, family="ubuntu"),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20), family="ubuntu"),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15), family="ubuntu"),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10), family="ubuntu"),
     plot.subtitle = element_text(color = "#424242",
                                  size = text_size - (text_size / 100 * 20))
   ) +
@@ -319,7 +320,7 @@ creb1.plot <- CREB1 %>%
   mutate(population = fct_reorder(population, locator_x)) %>%
   ggplot(aes(
     y = mean_creb1,
-    x = 10 * (locator_x),
+    x = 10 * (locator),
     color = cluster
   )) +
   stat_summary(
@@ -370,11 +371,11 @@ creb1.plot <- CREB1 %>%
       "Mare",
       "Gaua",
       "Espiritu Santo",
-      "Pentecost",
       "Malekula",
       "Ambrym",
-      "Efate",
       "",
+      "",
+      "Efate",
       "Tanna"
     )
   ) +
@@ -386,10 +387,10 @@ creb1.plot <- CREB1 %>%
     legend.position = "none",
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    axis.text.x = element_text(angle=45,hjust=1, size = text_size),
-    axis.text.y = element_text(size = text_size - (text_size / 100 * 20)),
-    axis.title = element_text(size = text_size - (text_size / 100 * 15)),
-    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10)),
+    axis.text.x = element_text(hjust=1, angle=45, size = text_size, family="ubuntu"),
+    axis.text.y = element_text(size = text_size - (text_size / 100 * 20), family="ubuntu"),
+    axis.title = element_text(size = text_size - (text_size / 100 * 15), family="ubuntu"),
+    plot.title = element_text(face = "bold", size = text_size + (text_size / 100 * 10), family="ubuntu"),
     plot.subtitle = element_text(color = "#424242",
                                  size = text_size - (text_size / 100 * 20))
   ) +
@@ -512,7 +513,7 @@ CREB1 %>%
   ) +
   theme(legend.position = "none")
 
-all.plot<- creb1.plot+clock.plot+adcyap1.plot+npas2.plot+plot_layout(ncol=2)
+all.plot<- creb1.plot+clock.plot+adcyap1.plot+npas2.plot
 all.plot <- ggarrange(creb1.plot,clock.plot,npas2.plot,adcyap1.plot, common.legend = TRUE, ncol=2 ,nrow=2, legend="bottom")
 
 all.plot

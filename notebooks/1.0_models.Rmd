@@ -34,7 +34,9 @@ CREB1 <- subset %>%
   filter(population!="Erromango")
   
 CREB1$disp_index <-
-  rescale(CREB1$disp_index, to = c(0, 1))
+rescale(log(CREB1$disp_index), to = c(0, 1))
+
+CREB1<-CREB1 %>% mutate(disp_index=replace(disp_index, disp_index=="-Inf", 0))
 ```
 
 Process ADCYAP1
@@ -118,8 +120,8 @@ loo_compare(null_creb1$loo,model_creb1$loo)
 
 Posterior predictive checks and conditional effects - CREB1
 ```{r}
-pp_check(model_creb_poisson, nsamples =1000)
-conditional_effects(model_creb_poisson)
+pp_check(model_creb1, nsamples =1000)
+conditional_effects(model_creb1)
 ```
 
 
@@ -247,7 +249,7 @@ ggfit2 <-
   labs(y = "Mean CREB1 length (bp)\n", x = "\nPopulation Age (Mya)") + geom_text(data = data.frame(x = 0.18, y = 563.53306667085, 
     label = "Tasmania"), mapping = aes(x = x, y = y, label = label), 
     size = 3.8, angle = 0L, lineheight = 1L, hjust = 1L, 
-    vjust = 0.5, colour = "black", family = "sans", fontface = "plain", 
+    vjust = 0.5, colour = "black", family = "ubuntu", fontface = "plain", 
     inherit.aes = FALSE, show.legend = FALSE) + annotate(
     "curve",
     yend = 560.3,
@@ -274,8 +276,8 @@ loo_compare(mcp_null_creb_age$loo, mcp_creb_age$loo)
 
 ```{r}
 library(kableExtra)
-library(broom)
-tidy(model_creb1) %>% 
+library(broom.mixed)
+broom.mixed::tidy(mod_creb1) %>% 
   filter(grepl(term, pattern = '^b')) %>% 
   mutate(term = c('Intercept', 'Math', 'Male', 'General', 'Academic')) %>% 
   rename_all(str_to_title) %>% 
