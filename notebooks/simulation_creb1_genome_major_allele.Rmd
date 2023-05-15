@@ -1,0 +1,629 @@
+---
+title: "simulation_creb1_genome.Rmd"
+author: "Andrea Estandia"
+date: "27/03/2023"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+  
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+ 
+```{r}
+df <- read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv"))
+```
+ 
+Calculate whether each individual is heterozygous, homozygous for short or for long CREB1 
+```{r}
+df %>% 
+  ggplot(aes(x=mean_creb1))+
+  geom_histogram(binwidth =1)+
+  geom_vline(xintercept = 
+               median(df$mean_creb1+1, 
+                      na.rm = T))+
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.text.x = element_text(hjust=1,size=text_size),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_text(size = text_size),
+    legend.text = element_text(size=11),
+    legend.title = element_text())+
+  labs(x="\nCREB1 mean length", y="Count\n")
+
+  # Define function to assign values to new variable
+assign_value <- function(short, long) {
+  short <- as.numeric(as.character(short))
+  long <- as.numeric(as.character(long))
+  AB <- short != long
+  AA <- short == long & long > 553
+  BB <- short == long & long <= 553
+  ifelse(AB, "AB", ifelse(AA, "AA", "BB"))
+}
+
+# Use dplyr to create new variable
+new_data <- df %>%
+  drop_na(short_creb1) %>% 
+  mutate(geno_creb1 = assign_value(short_creb1, long_creb1))  
+
+geno_freq_pop <- new_data %>% 
+  group_by(population) %>% 
+  mutate(AA_freq=sum(geno_creb1=="AA")/length(geno_creb1)) %>% 
+  mutate(AB_freq=sum(geno_creb1=="AB")/length(geno_creb1)) %>% 
+  mutate(BB_freq=sum(geno_creb1=="BB")/length(geno_creb1)) %>% 
+  mutate(A_freq=(sum(geno_creb1=="AA")+sum(geno_creb1=="AB")/2)/length(geno_creb1)) %>% 
+  mutate(B_freq=(sum(geno_creb1=="BB")+sum(geno_creb1=="AB")/2)/length(geno_creb1)) %>% 
+  distinct(population,.keep_all = T)
+
+allele_geno_freq <- geno_freq_pop %>% 
+  select(population, AA_freq, AB_freq, BB_freq, A_freq, B_freq)
+
+geno_freq_pop %>%
+  ggplot(aes(x = population, y = geno_creb1, fill=geno_creb1)) +
+  geom_bar(position="stack", stat="identity")+
+  scale_fill_manual(values = c("#264653", "#2a9d8f", "#e9c46a"))+
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.text.x = element_text(hjust=1, angle=45, size=text_size),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_text(size = text_size),
+    legend.position = "right",
+    legend.text = element_text(size=11),
+    legend.title = element_text())+
+  labs(x="\n", y="\n",
+       subtitle="CREB1 genotype\n")+
+  guides(color=guide_legend(title="Cluster"))
+
+
+geno_freq_pop  %>% 
+  dplyr::select(population, A_freq, B_freq) %>% 
+  pivot_longer(cols=2:3) %>% 
+  ggplot(aes(x = population, y = value, fill=name)) +
+  geom_bar(position="stack", stat="identity")+
+  scale_fill_manual(values = c("#264653", "#2a9d8f"))+
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.text.x = element_text(hjust=1, angle=45, size=text_size),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_text(size = text_size),
+    legend.position = "right",
+    legend.text = element_text(size=11),
+    legend.title = element_text())+
+  labs(x="\n", y="\n",
+       subtitle="CREB1 genotype\n")+
+  guides(color=guide_legend(title="Cluster"))
+```
+
+Calculate major allele
+```{r}
+t <- df %>% 
+  drop_na(short_creb1) %>% 
+  group_by(population, short_creb1) %>% 
+  summarise(n=n()) %>% 
+  rename(allele=short_creb1)
+
+q <- df %>% 
+  drop_na(short_creb1) %>% 
+  group_by(population, long_creb1) %>% 
+  summarise(n=n()) %>% 
+  rename(allele=long_creb1)
+
+complete_alleles <-
+  full_join(t, q, by=c("population", "allele")) %>% 
+  ungroup() %>% 
+  replace(is.na(.), 0) %>% 
+  mutate(n = rowSums(.[3:4])) %>% 
+  dplyr::select(-c("n.x", "n.y")) %>% 
+  drop_na()
+
+prop_max <- complete_alleles %>%
+  group_by(population) %>%
+  summarize(major_allele = max(table(allele)) / sum(table(allele)))
+
+prop_min <-complete_alleles %>%
+  mutate(allele=as.factor(allele)) %>% 
+  group_by(population) %>%
+  summarise(min(n)/sum(n)) %>% 
+  rename(minor_allele=`min(n)/sum(n)`)
+```
+
+Estimate Het
+```{r}
+t <- allele_freqs[allele_freqs$PPmaf != 0, ]
+allele_freqs$he <-  apply(as.data.frame(allele_freqs$PPmaf), 1, function(x) 2*(x*(1-x)))
+
+allele_freqs %>% 
+  ggplot(aes(x = PPmaf)) + 
+  geom_histogram()+
+  gghighlight::gghighlight(PPmaf <                                                                                          as.numeric(quantile(allele_freqs$PPmaf, 0.9)) & PPmaf >                                                                                          as.numeric(quantile(allele_freqs$PPmaf, 0.1)))
+```
+
+```{r}
+populations <- c("Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Gaua",
+        "Espiritu_Santo",
+        "Malekula",
+        "Ambrym",
+        "Efate",
+        "Tanna"
+)
+
+# Create a list to store the grobs
+grob_list_left <- list()
+grob_list_right <- list()
+
+# Create an empty data frame to store results
+results_df <- data.frame(population = character(),
+                          allele = character(),
+                          rare= character(),
+                          stringsAsFactors = FALSE)
+for (pop in populations) {
+    # Read in allele frequency data for the given population
+    allele_freqs <-
+      read.table(
+        paste0(
+          "/media/sjoh4959/My Passport1/Andrea/1.0_silvereye_candidate_genes/reports/allele_freq/",
+          pop,
+          "_list.txt.beagle.out.mafs"
+        ),
+        header = TRUE
+      )
+    
+    
+    specific_value <- prop_min %>%
+      filter(population == pop) %>%
+      dplyr::select(minor_allele) %>%
+      pull()
+    
+    if (length(specific_value) == 0 || !is.numeric(specific_value)) {
+      next
+    }
+
+    
+    # Determine the top and bottom 0.1% thresholds
+    top_threshold <- quantile((1-allele_freqs$PPmaf), 0.9)
+    bottom_threshold <- quantile((1-allele_freqs$PPmaf), 0.1)
+    
+    # Determine whether the specific allele is rare or not
+    if (specific_value <= bottom_threshold || specific_value >= top_threshold) {
+      rareness <- "Rare"
+    } else {
+      rareness <- "Not rare"
+    }
+    
+     # Add results to the data frame
+    results_df <- rbind(results_df, 
+                        data.frame(population = pop,
+                                   allele = specific_value,
+                                   rare=rareness,
+                                   stringsAsFactors = FALSE))
+    
+    # Create the plot
+    plot_grob <- allele_freqs %>%
+      ggplot(aes(x = PPmaf)) +
+      geom_histogram(col = "#264653", fill = "#264653") +
+      geom_vline(xintercept = specific_value) +
+      theme_minimal() +
+      theme(
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(hjust = 1, size = text_size),
+        axis.text.y = element_text(size = text_size),
+        axis.title = element_text(size = text_size),
+        axis.title.x = element_blank(),
+        legend.position = "none"
+      ) +
+      ggtitle(paste0(pop,
+                     "\n",
+                     rareness,
+                     ": ",
+                     format(round(specific_value, 2), nsmall = 2)))
+    
+    # Add the plot to the grob list, based on the population
+    if (pop %in% c("Australia",
+                   "Tasmania",
+                   "NZ",
+                   "Chatham_Island",
+                   "Norfolk_Island")) {
+      grob_list_left[[pop]] <- plot_grob
+    } else {
+      grob_list_right[[pop]] <- plot_grob
+    }
+  }
+
+
+# Combine all the grobs into one plot using grid.arrange from the gridExtra package
+left_panel <- gridExtra::arrangeGrob(grobs=grob_list_left)
+right_panel <- gridExtra::arrangeGrob(grobs=grob_list_right)
+
+title <- 
+  textGrob("Allele A", gp=gpar(fontsize=20, fontface="bold"))
+
+combined_panel <- 
+  grid.arrange(left_panel, 
+               right_panel, 
+               ncol=2, 
+               top=title)
+
+# Display the combined panel
+combined_panel
+
+```
+
+
+Read genome-wide allele frequencies
+```{r}
+# Vector of population names
+populations <- c("Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Gaua",
+        "Espiritu_Santo",
+        "Malekula",
+        "Ambrym",
+        "Efate",
+        "Tanna"
+)
+
+# Create a list to store the grobs
+grob_list_left <- list()
+grob_list_right <- list()
+
+# Create an empty data frame to store results
+results_df <- data.frame(population = character(),
+                          allele = character(),
+                          frequency = numeric(),
+                          rare= character(),
+                          stringsAsFactors = FALSE)
+
+for (al in unique(complete_alleles$allele)) {
+  # Iterate through each population and create a plot
+  for (pop in populations) {
+    # Read in allele frequency data for the given population
+    allele_freqs <-
+      read.table(
+        paste0(
+          "/media/sjoh4959/My Passport1/Andrea/1.0_silvereye_candidate_genes/reports/allele_freq/",
+          pop,
+          "_list.txt.beagle.out.mafs"
+        ),
+        header = TRUE
+      )
+    
+    # Extract the specific value of the allele from geno_freq_pop
+    total_n =  complete_alleles %>%
+      filter(population == pop) %>%
+      summarise(sum(n)) %>%
+      pull()
+    
+    if (length(total_n) == 0 || !is.numeric(total_n)) {
+      next
+    }
+    
+    specific_value <- complete_alleles %>%
+      filter(population == pop) %>%
+      filter(allele == al) %>%
+      pull()
+    
+    if (length(specific_value) == 0 || !is.numeric(specific_value)) {
+      next
+    }
+    
+    freq = specific_value / total_n
+    
+    # Determine the top and bottom 0.1% thresholds
+    top_threshold <- quantile(allele_freqs$PPmaf, 0.9)
+    bottom_threshold <- quantile(allele_freqs$PPmaf, 0.1)
+    
+    # Determine whether the specific allele is rare or not
+    if (freq <= bottom_threshold || freq >= top_threshold) {
+      rareness <- "Rare"
+    } else {
+      rareness <- "Not rare"
+    }
+    
+     # Add results to the data frame
+    results_df <- rbind(results_df, 
+                        data.frame(population = pop,
+                                   allele = al,
+                                   frequency = freq,
+                                   rare=rareness,
+                                   stringsAsFactors = FALSE))
+    
+    # Create the plot
+    plot_grob <- allele_freqs %>%
+      ggplot(aes(x = PPmaf)) +
+      geom_histogram(col = "#264653", fill = "#264653") +
+      geom_vline(xintercept = specific_value) +
+      theme_minimal() +
+      theme(
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(hjust = 1, size = text_size),
+        axis.text.y = element_text(size = text_size),
+        axis.title = element_text(size = text_size),
+        axis.title.x = element_blank(),
+        legend.position = "none"
+      ) +
+      ggtitle(paste0(pop,
+                     "\n",
+                     rareness,
+                     ": ",
+                     format(round(specific_value, 2), nsmall = 2)))
+    
+    # Add the plot to the grob list, based on the population
+    if (pop %in% c("Australia",
+                   "Tasmania",
+                   "NZ",
+                   "Chatham_Island",
+                   "Norfolk_Island")) {
+      grob_list_left[[pop]] <- plot_grob
+    } else {
+      grob_list_right[[pop]] <- plot_grob
+    }
+  }
+}
+
+# Combine all the grobs into one plot using grid.arrange from the gridExtra package
+left_panel <- gridExtra::arrangeGrob(grobs=grob_list_left)
+right_panel <- gridExtra::arrangeGrob(grobs=grob_list_right)
+
+title <- 
+  textGrob("Allele A (long allele)", gp=gpar(fontsize=20, fontface="bold"))
+
+combined_panel <- 
+  grid.arrange(left_panel, 
+               right_panel, 
+               ncol=2, 
+               top=title)
+
+# Display the combined panel
+combined_panel
+```
+
+
+```{r}
+total_n <- results_df %>% 
+  group_by(population, rare) %>% 
+  summarise(n=n()) %>% 
+  group_by(population) %>% 
+  summarise(total_n=sum(n))
+
+total_rare <- results_df %>% 
+  group_by(population, rare) %>% 
+  filter(rare=="Rare") %>% 
+  summarise(n=n()) %>% 
+  group_by(population) %>% 
+  summarise(total_rare=sum(n))
+
+percentage_rare_alleles <-
+  left_join(total_n, total_rare) %>%
+  mutate(total_rare = replace_na(total_rare, 0)) %>% 
+  mutate(prop_rare=total_rare/total_n)
+  
+
+```
+
+```{r}
+# Vector of population names
+populations <- c("Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Gaua",
+        "Espiritu_Santo",
+        "Malekula",
+        "Ambrym",
+        "Efate",
+        "Tanna"
+)
+
+# Create a list to store the grobs
+grob_list_left <- list()
+grob_list_right <- list()
+
+# Iterate through each population and create a plot
+for (pop in populations) {
+  
+  # Read in allele frequency data for the given population
+  allele_freqs <- read.table(paste0("/media/sjoh4959/My Passport1/Andrea/1.0_silvereye_candidate_genes/reports/allele_freq/", pop, "_list.txt.beagle.out.mafs"), header=TRUE)
+  
+  # Extract the specific value of the allele from geno_freq_pop
+  specific_value <- geno_freq_pop %>%
+    filter(population == pop) %>%
+    dplyr::select(B_freq) %>%
+    pull()
+
+  # Determine the top and bottom 0.1% thresholds
+  top_threshold <- quantile(allele_freqs$PPmaf, 0.9)
+  bottom_threshold <- quantile(allele_freqs$PPmaf, 0.1)
+
+  # Determine whether the specific allele is rare or not
+  if (specific_value <= bottom_threshold || specific_value >= top_threshold) {
+    rareness <- "Rare"
+  } else {
+    rareness <- "Not rare"
+  }
+
+  # Create the plot
+  plot_grob <- allele_freqs %>%
+    ggplot(aes(x=PPmaf))+
+    geom_histogram(col = "#264653", fill = "#264653")+
+    geom_vline(xintercept = specific_value) +
+    theme_minimal() +
+    theme(
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_blank(),
+      axis.text.x = element_text(hjust=1, size=text_size),
+      axis.text.y = element_text(size = text_size),
+      axis.title = element_text(size = text_size),
+      axis.title.x = element_blank(),
+      legend.position = "none") +
+    ggtitle(paste0(pop, 
+                   "\n", 
+                   rareness, 
+                   ": ", 
+                   format(round(specific_value, 2), nsmall = 2))) 
+  
+  # Add the plot to the grob list, based on the population
+  if (pop %in% c("Australia", "Tasmania", "NZ", "Chatham_Island", "Norfolk_Island")) {
+    grob_list_left[[pop]] <- plot_grob
+  } else {
+    grob_list_right[[pop]] <- plot_grob
+  }
+}
+
+
+# Combine all the grobs into one plot using grid.arrange from the gridExtra package
+left_panel <- arrangeGrob(grobs=grob_list_left)
+right_panel <- arrangeGrob(grobs=grob_list_right)
+
+title <- 
+  grid::textGrob("Allele B (short allele)", gp=gpar(fontsize=20, fontface="bold"))
+
+combined_panel_B <- 
+  grid.arrange(left_panel, 
+               right_panel, 
+               ncol=2, 
+               top=title)
+
+# Display the combined panel
+combined_panel_B
+```
+
+```{r}
+# Vector of population names
+populations <- c("Australia",
+        "Tasmania",
+        "NZ",
+        "Chatham_Island",
+        "Norfolk_Island",
+        "Heron_Island",
+        "Lord_Howe_Island",
+        "Grand_Terre",
+        "Ouvea",
+        "Lifou",
+        "Mare",
+        "Gaua",
+        "Espiritu_Santo",
+        "Malekula",
+        "Ambrym",
+        "Efate",
+        "Tanna"
+)
+
+# Create a list to store the grobs
+grob_list_left <- list()
+grob_list_right <- list()
+
+# Iterate through each population and create a plot
+for (pop in populations) {
+  
+  # Read in allele frequency data for the given population
+  allele_freqs <- read.table(paste0("/media/sjoh4959/My Passport1/Andrea/1.0_silvereye_candidate_genes/reports/allele_freq/", pop, "_list.txt.beagle.out.mafs"), header=TRUE)
+  
+  # Extract the specific value of the allele from geno_freq_pop
+  specific_value <- geno_freq_pop %>%
+    filter(population == pop) %>%
+    dplyr::select(A_freq) %>%
+    pull()
+
+  # Determine the top and bottom 0.1% thresholds
+  top_threshold <- quantile(allele_freqs$PPmaf, 0.9)
+  bottom_threshold <- quantile(allele_freqs$PPmaf, 0.1)
+
+  # Determine whether the specific allele is rare or not
+  if (specific_value <= bottom_threshold || specific_value >= top_threshold) {
+    rareness <- "Rare"
+  } else {
+    rareness <- "Not rare"
+  }
+
+  # Create the plot
+  plot_grob <- allele_freqs %>%
+    ggplot(aes(x=PPmaf))+
+    geom_histogram(col="#2a9d8f", fill="#2a9d8f")+
+    geom_vline(xintercept = specific_value) +
+    theme_minimal() +
+    theme(
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_blank(),
+      axis.text.x = element_text(hjust=1, size=text_size),
+      axis.text.y = element_text(size = text_size),
+      axis.title = element_text(size = text_size),
+      axis.title.x = element_blank(),
+      legend.position = "none") +
+    ggtitle(paste0(pop, 
+                   "\n", 
+                   rareness, 
+                   ": ", 
+                   format(round(specific_value, 2), nsmall = 2))) 
+  
+  # Add the plot to the grob list, based on the population
+  if (pop %in% c("Australia", "Tasmania", "NZ", "Chatham_Island", "Norfolk_Island")) {
+    grob_list_left[[pop]] <- plot_grob
+  } else {
+    grob_list_right[[pop]] <- plot_grob
+  }
+}
+
+
+# Combine all the grobs into one plot using grid.arrange from the gridExtra package
+left_panel <- arrangeGrob(grobs=grob_list_left)
+right_panel <- arrangeGrob(grobs=grob_list_right)
+
+title <- 
+  grid::textGrob("Allele A (long allele)", gp=gpar(fontsize=20, fontface="bold"))
+
+combined_panel_A <- 
+  grid.arrange(left_panel, 
+               right_panel, 
+               ncol=2, 
+               top=title)
+
+# Display the combined panel
+combined_panel_A
+```
+

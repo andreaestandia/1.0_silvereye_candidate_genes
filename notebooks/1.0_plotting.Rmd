@@ -93,7 +93,7 @@ npas2.plot <- NPAS2 %>%
     labels = c(
       "Australia",
       "Tasmania",
-      "Aotearoa/New Zealand",
+      "New Zealand",
       "Chatham Islands",
       "Norfolk Island",
       "Heron Island",
@@ -183,7 +183,7 @@ adcyap1.plot <- ADCYAP %>%
     labels = c(
       "Australia",
       "Tasmania",
-      "Aotearoa/New Zealand",
+      "New Zealand",
       "Chatham Islands",
       "Norfolk Island",
       "Heron Island",
@@ -227,7 +227,12 @@ adcyap1.plot <- ADCYAP %>%
 
 pal <- palette_Dark2(length(unique(CLOCK$population)))
 
+migrants <- 
+  CLOCK %>%
+  filter(migrant=="yes")
+
 clock.plot <- CLOCK %>%
+  filter(migrant!="yes") %>% 
   mutate(population = fct_reorder(population, locator_x)) %>%
   ggplot(aes(
     y = mean_clock,
@@ -240,10 +245,15 @@ clock.plot <- CLOCK %>%
     fun.data = mean_cl_boot,
     size = 1
   ) +
-  #geom_pointrange(aes(ymin=len-sd, ymax=len+sd)) +
+  
   geom_jitter(width = 2,
               height = 0.1,
               alpha = 0.25) +
+  geom_jitter(data=migrants,
+              width = 2,
+              height = 0.1,
+              alpha = 0.25,
+              col="#bd782a") +
    scale_x_continuous(
     breaks = as.numeric(
       c(
@@ -271,7 +281,7 @@ clock.plot <- CLOCK %>%
     labels = c(
       "Australia",
       "Tasmania",
-      "Aotearoa/New Zealand",
+      "New Zealand",
       "Chatham Islands",
       "Norfolk Island",
       "Heron Island",
@@ -360,7 +370,7 @@ creb1.plot <- CREB1 %>%
     labels = c(
       "Australia",
       "Tasmania",
-      "Aotearoa/New Zealand",
+      "New Zealand",
       "Chatham Islands",
       "Norfolk Island",
       "Heron Island",
@@ -472,7 +482,7 @@ CREB1 %>%
     labels = c(
       "Australia",
       "Tasmania",
-      "Aotearoa/New Zealand",
+      "New Zealand",
       "Chatham Islands",
       "Norfolk Island",
       "Heron Island",

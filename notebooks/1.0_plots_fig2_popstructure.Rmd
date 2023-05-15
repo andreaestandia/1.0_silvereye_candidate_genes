@@ -37,7 +37,7 @@ qmatrix <-
       levels = c(
         "Australia",
         "Tasmania",
-        "Aotearoa New Zealand",
+        "Aotearoa/New Zealand",
         "Chatham Islands",
         "Norfolk Island",
         "Heron Island",
@@ -60,7 +60,7 @@ qmatrix <-
     ))
 
 set.seed(123)
-group.colors <- c(k1 = "#474747", k2 = "#5498b3")
+group.colors <- c(k2 = "#474747", k1 = "#5498b3")
 
 structure_plot <-
     qmatrix %>%
@@ -88,6 +88,8 @@ structure_plot <-
       ),
       legend.position = 'none'
     )
+
+group.colors <- c(k1 = "#474747", k2 = "#5498b3")
 
   # Allelic length plot
 CREB_length_plot <-

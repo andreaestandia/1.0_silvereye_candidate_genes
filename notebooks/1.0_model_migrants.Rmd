@@ -26,14 +26,13 @@ Read data and create keep only CLOCK data
 
 ```{r, echo=FALSE}
 CLOCK <-
-  read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv")) %>%
+  read_csv(file.path(data_path, "curated_dataset.csv")) %>%
   mutate_if(is.character, as.factor) %>% 
   drop_na(mean_clock)
 ```
 
 
 Create subset with only Australia, Tasmania and Tasmanian migrants removing those birds that weren't caught in winter. Test whether there are differences between migrants, Australians and Tasmanian individuals
-
 ```{r}
 migratory.subset_total <- CLOCK %>%
   filter(population %in% "Tasmania") %>%
@@ -76,13 +75,24 @@ migratory.subset <-
 get_prior(mean_clock ~ population,
   data = migratory.subset)
 
+#Speficy prior
 bprior <- prior(normal(0,20), class = b)
 
+#Run model with mean allele length for CLOCK
 mod <- brm(
   mean_clock ~ population,
   data = migratory.subset,
   prior = bprior)
 
+#Run model with long allele length for CLOCK
+mod_long <- brm(
+  long_clock ~ population,
+  data = migratory.subset,
+  prior = bprior)
+```
+
+Plot raw data and posteriors from model
+```{r}
 migratory_raw <- migratory.subset %>% 
   ggplot(
     aes(

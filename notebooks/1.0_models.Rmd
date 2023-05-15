@@ -20,7 +20,7 @@ source("./src/ae-candidate-gene-analysis_source.R")
 
 ```{r}
 subset <-
-  read_csv(file.path(data_path, "20211001_df_cand_AE+SMC+BR.csv")) %>%
+  read_csv(file.path(data_path, "curated_dataset.csv")) %>%
   mutate_if(is.character, as.factor)
 ```
 
@@ -49,7 +49,7 @@ ADCYAP <- subset %>%
   filter(population!="Erromango")
 
 ADCYAP$disp_index <- rescale(ADCYAP$disp_index, to =c(0,1))
-ADCYAP$isolation_index <- rescale(ADCYAP$isolation_index, to = c(0, 1))
+#ADCYAP$isolation_index <- rescale(ADCYAP$isolation_index, to = c(0, 1))
 ```
 
 ```{r}

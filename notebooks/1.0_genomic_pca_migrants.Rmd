@@ -1,0 +1,167 @@
+---
+title: "1.0_genomic_pca_migrants.Rmd"
+author: "Andrea Estandia"
+date: "02/08/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, echo=FALSE}
+# Knitr settings: 
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+options(scipen = 999)
+```
+
+```{r, echo=FALSE}
+source("./src/ae-candidate-gene-analysis_source.R")
+```
+
+```{r}
+label <- 
+  read.csv(file.path(data_path,"migrants",
+  "migrantlabel.csv"),header = T)
+
+cov_mat <-
+  as.matrix(read.table(file.path(reports_path,"pcangsd",
+  "migrants.cov"
+  )))
+
+mds.cor <- (1 - cov_mat) %>%
+  cmdscale(k=2, eig = TRUE)
+
+colnames(mds.cor$points) <- c("Dim.1", "Dim.2")
+rownames(mds.cor$points) <-
+  label$id
+
+#Do PCA on cov matrix
+pca<-eigen(cov_mat)
+
+pca.mat <-
+  as.matrix(pca$vectors %*% (diag(pca$values))^0.5)
+
+nPC <-
+  dim(pca$vectors)[2]
+
+col_PC <- 
+  vector(length=nPC)
+
+for (i in 1 : nPC) {col_PC[i] <-
+  paste0("PC",i)}
+
+#add column names
+colnames(pca.mat) <-
+  c(col_PC)
+
+#add row names
+rownames(pca.mat) <-
+  label$id
+
+for (x in 1:4) {
+  nam <- 
+    as.character(paste0("var",x))
+  assign(nam, round(pca$values[x]*100/sum(pca$values[pca$values>=0]),2))
+}
+
+kmeans_res<-
+  kmeans(as.matrix(mds.cor$points[,1]), 
+         c(min(mds.cor$points[,1]), 
+           max(mds.cor$points[,1])))
+k_ss<-
+  round(kmeans_res$betweenss/kmeans_res$totss,2)
+
+k <- as.data.frame(kmeans_res$cluster)
+colnames(k) <- "k"
+
+pca.mat <- 
+  as.data.frame(pca.mat)
+
+pca.mat$pop <- 
+  label$migration_status
+
+pca.mat$sample_name <- 
+  label$id
+
+pca.out <- 
+  pca.mat[,c(1:4)]
+
+clusters <- 
+  cbind(label, pca.out) %>%
+  cbind(mds.cor$points) %>% 
+  cbind(k) %>% 
+  rename(migrant=migration_status)
+
+
+genomic_pca <- 
+  clusters %>% 
+  ggplot(aes(x=PC1, y=PC2, col=as.factor(migrant)))+
+  geom_point()+
+  theme_minimal() +
+  scale_color_manual(values = c("#4f84b0", "#c78720"))+
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.text.x = element_text(hjust=1, size=text_size),
+    axis.text.y = element_text(size = text_size),
+    axis.title = element_text(size = text_size),
+    legend.position = "right",
+    legend.text = element_text(size=11),
+    legend.title = element_text())+
+  labs(x="\nPC1", y="PC2\n", 
+       title="Genome-wide PCA",
+       subtitle="migrants vs residents\n")+
+  guides(color=guide_legend(title=""))  
+
+```
+
+Morphology
+```{r}
+migrant_df <- 
+  read.csv(file.path(data_path,"migrant_2022.csv"))
+
+body_pca <-
+  princomp(~Wing+
+             Tarsus+
+             Tail+
+             Head,
+           data=migrant_df,
+           scores=TRUE,
+           cor=TRUE,
+           na.action=na.exclude)
+
+colnames(body_pca$scores) <- 
+  c("body_PC1", "body_PC2", "body_PC3", "body_PC4")
+
+pheno <- 
+  cbind(migrant_df,body_pca$scores) 
+
+morph_pca <- 
+  pheno %>% 
+  filter(body_PC1> -6) %>% 
+  ggplot(aes(x=body_PC1, y=body_PC2, col=as.factor(migrant)))+
+  geom_point()+
+  theme_minimal() +
+  scale_color_manual(values = c("#4f84b0", "#c78720"), 
+                     labels=c("Migrant", "Resident"))+
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.text.x = element_text(hjust=1, size=text_size),
+    axis.text.y = element_text(size = text_size),
+    axis.title = element_text(size = text_size),
+    legend.position = "right",
+    legend.text = element_text(size=11),
+    legend.title = element_text())+
+  labs(x="\nPC1", y="PC2\n", 
+       title="Morphological PCA",
+       subtitle="migrants vs residents\n")+
+  guides(color=guide_legend(title=""))  
+```
+
+```{r}
+genomic_pca/morph_pca+plot_layout(guides = 'collect')
+```
+
