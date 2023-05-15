@@ -11,6 +11,8 @@ The structure is the following:
 
 ```src``` contains `ae-candidate-gene-analysis_source.R` all the functions used in the R notebooks and my_scripts includes all the python functions I wrote to do data wrangling with BEAGLE, BA3, and VCF files 
 
+`docs` contains the newest version of the MS
+
 `notebooks` contains all the R notebooks and bash code to generate the final BEAGLE file that I used to estimate population structure with PCAngsd and NGSadmix.
 
 You should download: i) the data and integrate it within the 1.0_silvereye_candidate_genes folder as a folder called ```data```, and ii) ```reports``` folder.
