@@ -9,12 +9,7 @@ To download this repository just open a terminal and paste:
 
 The structure is the following:
 
-```docs``` contains the:
-
-* Preprint
-* Supplementary material
-
-```src``` contains `ae-candidate-gene-analysis_source.R` all the functions used in the R notebooks and `subset_beagle.py` to subset any BEAGLE file by providing a list of individuals
+```src``` contains `ae-candidate-gene-analysis_source.R` all the functions used in the R notebooks and my_scripts includes all the python functions I wrote to do data wrangling with BEAGLE, BA3, and VCF files 
 
 `notebooks` contains all the R notebooks and bash code to generate the final BEAGLE file that I used to estimate population structure with PCAngsd and NGSadmix.
 
